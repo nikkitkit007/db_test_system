@@ -1,22 +1,31 @@
 import sys
 
+from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QComboBox, QSpinBox, QLineEdit, QPushButton, QApplication
 
 from log import get_logger
 from manager.db_manager import DatabaseManager
 from manager.docker_manager import DockerManager
-from utils import load_csv_to_db, execute_and_measure, generate_csv
-
+from manager.test_result_storage import sqlite_manager
+from utils import load_csv_to_db, generate_csv, measure_performance
 
 logger = get_logger(__name__)
 
 
-class DockerConfigApp(QWidget):
-    def __init__(self):
-        super().__init__()
+class ConfigApp(QWidget):
 
+    test_completed = pyqtSignal()  # Добавляем сигнал
+
+    def __init__(self, ):
+        super().__init__()
         self.initUI()
+        self.docker_manager = DockerManager()
+
+        self.db_image = ''
+        self.operation = ''
+        self.num_records = ''
+        self.data_types = []
 
     def initUI(self):
         self.setWindowTitle('Docker Configurator')
@@ -77,18 +86,18 @@ class DockerConfigApp(QWidget):
         self.setLayout(layout)
 
     def start_process(self):
-        db_image = self.db_image_combo.currentText()
-        operation = self.operation_combo.currentText()
-        num_records = self.records_spinbox.value()
-        data_types_input = self.data_types_edit.text()
+        self.db_image = self.db_image_combo.currentText()
+        self.operation = self.operation_combo.currentText()
+        self.num_records = self.records_spinbox.value()
+        self.data_types = self.data_types_edit.text()
 
         # Преобразование строки типов данных в список
-        data_types = [dt.strip() for dt in data_types_input.split(',')]
+        self.data_types = [dt.strip() for dt in self.data_types.split(',')]
 
-        print(f'Selected DB Image: {db_image}')
-        print(f'Selected Operation: {operation}')
-        print(f'Number of Records: {num_records}')
-        print(f'Data Types: {data_types}')
+        print(f'Selected DB Image: {self.db_image}')
+        print(f'Selected Operation: {self.operation}')
+        print(f'Number of Records: {self.num_records}')
+        print(f'Data Types: {self.data_types}')
 
         # Docker container setup
         db_name = 'test_db'
@@ -97,25 +106,24 @@ class DockerConfigApp(QWidget):
         host = 'localhost'
         port = 5432
 
-        docker_manager = DockerManager()
-        docker_manager.pull_image(db_image)
+        self.docker_manager.pull_image(self.db_image)
 
         # Запуск контейнера
-        docker_manager.run_container(
-            image_name=db_image,
+        self.docker_manager.run_container(
+            image_name=self.db_image,
             container_name="postgres_test",
             ports={"5432/tcp": port},
             environment={"POSTGRES_DB": db_name, "POSTGRES_USER": user, "POSTGRES_PASSWORD": password}
         )
 
-        self.generate_csv_and_load_data(db_image, operation, num_records, data_types, db_name, user, password, host,
+        self.generate_csv_and_load_data(db_name, user, password, host,
                                         port)
 
-    def generate_csv_and_load_data(self, db_image: str, operation: str, num_records: int, data_types: list,
+    def generate_csv_and_load_data(self,
                                    db_name: str, user: str, password: str, host: str, port: int):
         # Генерация CSV
         csv_file = 'test_data.csv'
-        generate_csv(csv_file, num_records, data_types)
+        generate_csv(csv_file, self.num_records, self.data_types)
 
         # Параметры подключения к базе данных
         db_manager = DatabaseManager(
@@ -127,14 +135,19 @@ class DockerConfigApp(QWidget):
             db_name=db_name
         )
 
-        # Загрузка данных в базу данных
-        load_csv_to_db(csv_file, db_manager, 'test_table')
+        self.load_test(csv_file, db_manager, 'test_table')
 
         print('Process completed.')
+        self.test_completed.emit()  # Испускание сигнала по завершении теста
+
+    @measure_performance(sqlite_manager)
+    def load_test(self, csv_file, db_manager, table):
+        # Загрузка данных в базу данных
+        load_csv_to_db(csv_file, db_manager, table)
 
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    ex = DockerConfigApp()
+    ex = ConfigApp()
     ex.show()
     sys.exit(app.exec_())
