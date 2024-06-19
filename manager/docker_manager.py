@@ -40,6 +40,9 @@ class DockerManager:
         :return: Объект контейнера или None в случае ошибки
         """
         try:
+            logger.info(f"Проверка существования контейнера {container_name}...")
+            self.remove_container_if_exists(container_name)
+
             logger.info(f"Запуск контейнера {container_name} с образом {image_name}...")
             container = self.client.containers.run(
                 image_name,
@@ -83,6 +86,22 @@ class DockerManager:
         except DockerException as e:
             logger.info(f"Ошибка при получении списка контейнеров: {e}")
             return []
+
+    def remove_container_if_exists(self, container_name: str):
+        """
+        Удаляет контейнер, если он существует.
+
+        :param container_name: Название контейнера
+        """
+        try:
+            container = self.client.containers.get(container_name)
+            container.stop()
+            container.remove()
+            logger.info(f"Контейнер {container_name} остановлен и удален.")
+        except docker.errors.NotFound:
+            logger.info(f"Контейнер {container_name} не найден. Ничего не удалено.")
+        except DockerException as e:
+            logger.info(f"Ошибка при удалении контейнера: {e}")
 
     def wait_for_container_ready(self, container_name: str, ports: dict, timeout: int = 60):
         """

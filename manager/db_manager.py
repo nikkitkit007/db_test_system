@@ -1,3 +1,5 @@
+import time
+
 import pandas as pd
 from sqlalchemy import create_engine, MetaData, Table, Column, String, Date, Integer, text
 from sqlalchemy.exc import SQLAlchemyError
@@ -19,12 +21,16 @@ class DatabaseManager:
         self.Session = sessionmaker(bind=self.engine)
         self.metadata = MetaData()
 
+        self.test_connection()
+
     def create_engine(self):
         db_url = f"{self.db_type}://{self.username}:{self.password}@{self.host}:{self.port}/{self.db_name}"
         return create_engine(db_url)
 
     def create_table(self, table_name, columns):
         try:
+            self.drop_table_if_exists(table_name)
+
             type_mapping = {
                 'int': Integer,
                 'str': String,
@@ -69,20 +75,37 @@ class DatabaseManager:
             logger.info(f"Ошибка при выполнении запроса: {e}")
             return
 
-    def test_connection(self):
+    def drop_table_if_exists(self, table_name: str):
+        """
+        Удаляет таблицу, если она существует.
+
+        :param table_name: Название таблицы
+        """
+        try:
+            table = Table(table_name, self.metadata, autoload_with=self.engine)
+            table.drop(self.engine)
+            logger.info(f"Таблица {table_name} удалена.")
+        except SQLAlchemyError as e:
+            logger.info(f"Ошибка при удалении таблицы: {e}")
+
+    def test_connection(self, retries: int = 5, delay: int = 2):
         """
         Тестирует подключение к базе данных.
 
+        :param retries: Количество попыток
+        :param delay: Задержка между попытками в секундах
         :return: True, если подключение успешно, иначе False
         """
-        try:
-            with self.engine.connect() as connection:
-                connection.execute(text("SELECT 1"))
-                logger.info("Подключение к базе данных успешно.")
-                return True
-        except SQLAlchemyError as e:
-            logger.info(f"Ошибка при подключении к базе данных: {e}")
-            return False
+        for attempt in range(retries):
+            try:
+                with self.engine.connect() as connection:
+                    connection.execute(text("SELECT 1"))
+                    logger.info("Подключение к базе данных успешно.")
+                    return True
+            except SQLAlchemyError as e:
+                logger.info(f"Ошибка при подключении к базе данных: {e}")
+                time.sleep(delay)
+        return False
 
 
 if __name__ == '__main__':

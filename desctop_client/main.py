@@ -3,9 +3,13 @@ import sys
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QComboBox, QSpinBox, QLineEdit, QPushButton, QApplication
 
+from log import get_logger
 from manager.db_manager import DatabaseManager
 from manager.docker_manager import DockerManager
 from utils import load_csv_to_db, execute_and_measure, generate_csv
+
+
+logger = get_logger(__name__)
 
 
 class DockerConfigApp(QWidget):
@@ -104,7 +108,6 @@ class DockerConfigApp(QWidget):
             environment={"POSTGRES_DB": db_name, "POSTGRES_USER": user, "POSTGRES_PASSWORD": password}
         )
 
-        # Пример использования сгенерированного списка типов данных
         self.generate_csv_and_load_data(db_image, operation, num_records, data_types, db_name, user, password, host,
                                         port)
 
@@ -126,11 +129,6 @@ class DockerConfigApp(QWidget):
 
         # Загрузка данных в базу данных
         load_csv_to_db(csv_file, db_manager, 'test_table')
-
-        # Пример выполнения команды и измерения времени выполнения и потребления памяти
-        if operation.lower() == 'insert':
-            query = f"INSERT INTO test_table ({', '.join([f'col_{i + 1}' for i in range(len(data_types))])}) VALUES ({', '.join(['%s'] * len(data_types))})"
-            execute_and_measure(db_manager, query)
 
         print('Process completed.')
 
