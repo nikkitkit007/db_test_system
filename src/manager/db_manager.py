@@ -4,7 +4,7 @@ import pandas as pd
 from sqlalchemy import create_engine, MetaData, Table, Column, String, Date, Integer, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
-from log import get_logger
+from src.config.log import get_logger
 
 logger = get_logger(__name__)
 

@@ -4,11 +4,11 @@ from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QComboBox, QSpinBox, QLineEdit, QPushButton, QApplication
 
-from log import get_logger
-from manager.db_manager import DatabaseManager
-from manager.docker_manager import DockerManager
-from manager.test_result_storage import sqlite_manager
-from utils import load_csv_to_db, generate_csv, measure_performance
+from src.config.log import get_logger
+from src.manager.db_manager import DatabaseManager
+from src.manager.docker_manager import DockerManager
+from src.manager.test_result_storage import sqlite_manager
+from src.utils import load_csv_to_db, generate_csv, measure_performance
 
 logger = get_logger(__name__)
 
@@ -40,7 +40,7 @@ class ConfigApp(QWidget):
         self.db_image_label.setFont(font)
         self.db_image_combo = QComboBox()
         self.db_image_combo.setFont(font)
-        self.db_image_combo.addItems(['postgres:latest', 'mysql:latest', 'mariadb:latest'])
+        self.db_image_combo.addItems(['postgres:latest', 'mysql:latest', 'sqlite:latest'])
 
         layout.addWidget(self.db_image_label)
         layout.addWidget(self.db_image_combo)
@@ -111,7 +111,7 @@ class ConfigApp(QWidget):
         # Запуск контейнера
         self.docker_manager.run_container(
             image_name=self.db_image,
-            container_name="postgres_test",
+            container_name=f"{self.db_image}_test",
             ports={"5432/tcp": port},
             environment={"POSTGRES_DB": db_name, "POSTGRES_USER": user, "POSTGRES_PASSWORD": password}
         )

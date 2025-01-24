@@ -7,7 +7,7 @@ from structlog.contextvars import merge_contextvars
 from structlog.stdlib import ProcessorFormatter
 import os
 
-from config import settings
+from src.config.config import settings
 
 
 class GZipRotator:

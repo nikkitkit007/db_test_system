@@ -1,7 +1,7 @@
 import sqlite3
 from sqlite3 import Error
 
-from log import get_logger
+from src.config.log import get_logger
 
 logger = get_logger(__name__)
 

@@ -1,10 +1,9 @@
 import sys
 
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QLineEdit, \
-    QPushButton, QListWidget, QMessageBox, QTableWidgetItem, QTableWidget
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QPushButton, QListWidget, QMessageBox, QTableWidgetItem, QTableWidget
 
-from manager.test_result_storage import sqlite_manager
+from src.manager.test_result_storage import sqlite_manager
 
 
 class TestResultsApp(QWidget):

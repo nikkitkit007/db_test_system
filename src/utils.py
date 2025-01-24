@@ -5,7 +5,7 @@ import time
 import pandas as pd
 import psutil
 
-from log import get_logger
+from src.config.log import get_logger
 from manager.db_manager import DatabaseManager
 from functools import wraps
 

@@ -2,7 +2,6 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QTa
 
 from desctop_client.test_conf_tab import ConfigApp
 from desctop_client.test_result_tab import TestResultsApp
-from manager.test_result_storage import SQLiteManager
 
 
 class MainApp(QMainWindow):

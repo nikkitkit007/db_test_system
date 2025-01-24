@@ -3,8 +3,8 @@ import time
 import docker
 from docker.errors import DockerException
 
-from log import get_logger
-from manager.db_manager import DatabaseManager
+from src.config.log import get_logger
+from src.manager.db_manager import DatabaseManager
 
 logger = get_logger(__name__)
 

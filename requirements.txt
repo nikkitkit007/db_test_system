@@ -5,3 +5,4 @@ psycopg2~=2.9.9
 PyQt5~=5.15.10
 SQLAlchemy~=2.0.31
 psutil~=5.9.8
+ruff~=0.9.3
