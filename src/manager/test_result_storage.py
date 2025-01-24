@@ -21,25 +21,6 @@ class SQLiteManager:
             logger.info(f"Ошибка при соединении с базой данных SQLite: {e}")
         return conn
 
-    def create_table(self):
-        """ Создание таблицы для хранения результатов тестов """
-        create_table_sql = """ CREATE TABLE IF NOT EXISTS test_results (
-                                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                    timestamp TEXT NOT NULL,
-                                    db_image TEXT NOT NULL,
-                                    operation TEXT NOT NULL,
-                                    num_records INTEGER NOT NULL,
-                                    data_types TEXT NOT NULL,
-                                    execution_time REAL,
-                                    memory_used REAL
-                                ); """
-        try:
-            c = self.conn.cursor()
-            c.execute(create_table_sql)
-            logger.info("Таблица test_results создана.")
-        except Error as e:
-            logger.info(f"Ошибка при создании таблицы: {e}")
-
     def insert_result(self, timestamp: str, db_image: str, operation: str, num_records: int, data_types: str,
                       execution_time: float, memory_used: float):
         """ Вставка записи в таблицу результатов тестов """
@@ -73,5 +54,4 @@ class SQLiteManager:
 
 
 sqlite_manager = SQLiteManager("test_results.db")
-# sqlite_manager.create_table()
 
