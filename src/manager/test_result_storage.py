@@ -1,7 +1,9 @@
 import sqlite3
 from sqlite3 import Error
 
+from src.config.config import settings
 from src.config.log import get_logger
+from src.schemas.model import TestResults
 
 logger = get_logger(__name__)
 
@@ -53,5 +55,5 @@ class SQLiteManager:
         return row
 
 
-sqlite_manager = SQLiteManager("test_results.db")
+sqlite_manager = SQLiteManager(settings.SQLITE_DB_PATH)
 

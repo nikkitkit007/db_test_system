@@ -4,17 +4,13 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    VIDEO_ANALYSIS_TOPIC: str = "video_analysis"
-    RECOMMENDATION_REQUEST_TOPIC: str = "recommendation_request"
-    RECOMMENDATION_RESPONSE_TOPIC: str = "recommendation_response"
-    CASHIER_INTERACTIONS_TOPIC: str = "cashier_interactions"
-
-    KAFKA_CLIENT_PORT: int = 9092
 
     LogLevel: int = logging.INFO
     LogFormat: str = "%(message)s"
     LogFileSizeMB: int = 50
     LogFileCount: int = 50
+
+    SQLITE_DB_PATH: str = 'test_results.db'
 
     DB_HOST: str = 'localhost'
     DB_PORT: int = 5432
