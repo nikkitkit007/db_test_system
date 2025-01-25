@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     LogFileCount: int = 50
 
     SQLITE_DB_PATH: str = 'test_results.db'
+    SQLITE_DB_URL: str = f"sqlite:///{SQLITE_DB_PATH}"
 
     DB_HOST: str = 'localhost'
     DB_PORT: int = 5432
