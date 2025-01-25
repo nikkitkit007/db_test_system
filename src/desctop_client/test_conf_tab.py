@@ -50,7 +50,7 @@ class ConfigApp(QWidget):
         self.db_image_label.setFont(font)
         self.db_image_combo = QComboBox()
         self.db_image_combo.setFont(font)
-        self.db_image_combo.addItems(["postgres:latest", "mysql:latest", "sqlite:latest"])
+        self.db_image_combo.addItems(["postgres:latest", "mysql:latest", "alpine/sqlite"])
 
         layout.addWidget(self.db_image_label)
         layout.addWidget(self.db_image_combo)
