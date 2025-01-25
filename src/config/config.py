@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     DB_PASSWORD: str = 'mysecretpassword'
     DB_DIALECT: str = 'postgresql+psycopg'
 
+    CSV_FILE_WITH_TEST_DATA: str = 'test_data.csv'
+
     class Config:
         env_file = '.env'
         env_file_encoding = 'utf-8'

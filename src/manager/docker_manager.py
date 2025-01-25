@@ -1,7 +1,8 @@
 import time
 
 import docker
-from docker.errors import DockerException
+from docker.errors import DockerException, NotFound
+from docker.models.images import Image
 
 from src.config.log import get_logger
 from src.manager.db_manager import DatabaseManager
@@ -13,21 +14,20 @@ class DockerManager:
     def __init__(self):
         self.client = docker.from_env()
 
-    def pull_image(self, image_name: str):
+    def pull_image(self, image_name: str) -> Image | None:
         """
         Загружает образ из Docker Hub.
-
-        :param image_name: Название образа Docker
-        :return: Объект образа или None в случае ошибки
         """
+        logger.info(f"Загрузка образа {image_name}...")
+
+        image = None
         try:
-            logger.info(f"Загрузка образа {image_name}...")
             image = self.client.images.pull(image_name)
             logger.info(f"Образ {image_name} загружен.")
-            return image
         except DockerException as e:
             logger.info(f"Ошибка при загрузке образа: {e}")
-            return None
+
+        return image
 
     def run_container(self, image_name: str, container_name: str, ports: dict = None, environment: dict = None):
         """
@@ -40,19 +40,18 @@ class DockerManager:
         :return: Объект контейнера или None в случае ошибки
         """
         try:
-            logger.info(f"Проверка существования контейнера {container_name}...")
             self.remove_container_if_exists(container_name)
 
             logger.info(f"Запуск контейнера {container_name} с образом {image_name}...")
             container = self.client.containers.run(
-                image_name,
+                image=image_name,
                 name=container_name,
                 ports=ports,
                 environment=environment,
                 detach=True
             )
-            logger.info(f"Контейнер {container_name} запущен.")
             self.wait_for_container_ready(container_name, ports)
+            logger.info(f"Контейнер {container_name} запущен.")
             return container
         except DockerException as e:
             logger.info(f"Ошибка при запуске контейнера: {e}")
@@ -65,23 +64,21 @@ class DockerManager:
         :param container_name: Название контейнера
         """
         try:
-            logger.info(f"Остановка контейнера {container_name}...")
             container = self.client.containers.get(container_name)
             container.stop()
             container.remove()
             logger.info(f"Контейнер {container_name} остановлен и удален.")
+        except NotFound:
+            logger.warning(f"Контейнер {container_name} не найден.")
         except DockerException as e:
-            logger.info(f"Ошибка при остановке контейнера: {e}")
+            logger.error(f"Ошибка при остановке контейнера: {e}")
 
-    def list_containers(self, all: bool = True):
+    def list_containers(self, with_stopped: bool = True) -> list:
         """
         Возвращает список всех контейнеров.
-
-        :param all: Если True, возвращает все контейнеры, включая остановленные
-        :return: Список объектов контейнеров
         """
         try:
-            containers = self.client.containers.list(all=all)
+            containers = self.client.containers.list(all=with_stopped)
             return containers
         except DockerException as e:
             logger.info(f"Ошибка при получении списка контейнеров: {e}")
@@ -90,15 +87,13 @@ class DockerManager:
     def remove_container_if_exists(self, container_name: str):
         """
         Удаляет контейнер, если он существует.
-
-        :param container_name: Название контейнера
         """
         try:
             container = self.client.containers.get(container_name)
             container.stop()
             container.remove()
             logger.info(f"Контейнер {container_name} остановлен и удален.")
-        except docker.errors.NotFound:
+        except NotFound:
             logger.info(f"Контейнер {container_name} не найден. Ничего не удалено.")
         except DockerException as e:
             logger.info(f"Ошибка при удалении контейнера: {e}")
@@ -166,9 +161,9 @@ if __name__ == "__main__":
     )
     # Тест подключения
     if db_manager.test_connection():
-        logger.info("Тест подключения прошел успешно.")
+        logger.info("Подключение к базе данных успешно.")
     else:
-        logger.info("Тест подключения не удался.")
+        logger.error("Не удалось подключиться к базе данных.")
 
     # print(manager.list_containers())
 

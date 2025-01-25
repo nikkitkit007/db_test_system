@@ -4,7 +4,7 @@ from sqlite3 import Error
 
 from src.config.config import settings
 from src.config.log import get_logger
-from src.schemas.model import TestResults
+from src.storage.model import TestResults
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 

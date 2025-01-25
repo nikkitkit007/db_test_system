@@ -1,7 +1,7 @@
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
-from src.schemas.model import Base
+from src.storage.model import Base
 
 from alembic import context
 

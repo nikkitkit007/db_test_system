@@ -4,10 +4,11 @@ from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QComboBox, QSpinBox, QLineEdit, QPushButton, QApplication
 
+from src.config.config import settings
 from src.config.log import get_logger
 from src.manager.db_manager import DatabaseManager
 from src.manager.docker_manager import DockerManager
-from src.manager.test_result_storage import sqlite_manager
+from src.storage.test_result_storage import sqlite_manager
 from src.utils import load_csv_to_db, generate_csv, measure_performance
 
 logger = get_logger(__name__)
@@ -94,10 +95,10 @@ class ConfigApp(QWidget):
         # Преобразование строки типов данных в список
         self.data_types = [dt.strip() for dt in self.data_types.split(',')]
 
-        print(f'Selected DB Image: {self.db_image}')
-        print(f'Selected Operation: {self.operation}')
-        print(f'Number of Records: {self.num_records}')
-        print(f'Data Types: {self.data_types}')
+        logger.info(f'Selected DB Image: {self.db_image}')
+        logger.info(f'Selected Operation: {self.operation}')
+        logger.info(f'Number of Records: {self.num_records}')
+        logger.info(f'Data Types: {self.data_types}')
 
         # Docker container setup
         db_name = 'test_db'
@@ -121,9 +122,7 @@ class ConfigApp(QWidget):
 
     def generate_csv_and_load_data(self,
                                    db_name: str, user: str, password: str, host: str, port: int):
-        # Генерация CSV
-        csv_file = 'test_data.csv'
-        generate_csv(csv_file, self.num_records, self.data_types)
+        generate_csv(settings.CSV_FILE_WITH_TEST_DATA, self.num_records, self.data_types)
 
         # Параметры подключения к базе данных
         db_manager = DatabaseManager(
@@ -135,9 +134,9 @@ class ConfigApp(QWidget):
             db_name=db_name
         )
 
-        self.load_test(csv_file, db_manager, 'test_table')
+        self.load_test(settings.CSV_FILE_WITH_TEST_DATA, db_manager, 'test_table')
 
-        print('Process completed.')
+        logger.info('Process completed.')
         self.test_completed.emit()  # Испускание сигнала по завершении теста
 
     @measure_performance(sqlite_manager)

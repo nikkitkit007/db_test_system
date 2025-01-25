@@ -1,4 +1,5 @@
 import time
+from typing import Any
 
 import pandas as pd
 from sqlalchemy import create_engine, MetaData, Table, Column, String, Date, Integer, text
@@ -7,6 +8,12 @@ from sqlalchemy.orm import sessionmaker
 from src.config.log import get_logger
 
 logger = get_logger(__name__)
+
+type_mapping = {
+                'int': Integer,
+                'str': String,
+                'date': Date
+            }
 
 
 class DatabaseManager:
@@ -21,37 +28,28 @@ class DatabaseManager:
         self.Session = sessionmaker(bind=self.engine)
         self.metadata = MetaData()
 
-        self.test_connection()
+        if not self.test_connection():
+            logger.error("Не удалось подключиться к базе данных после нескольких попыток.")
+            raise ConnectionError("Failed to connect to the database.")
 
     def create_engine(self):
         db_url = f"{self.db_type}://{self.username}:{self.password}@{self.host}:{self.port}/{self.db_name}"
         return create_engine(db_url)
 
     def create_table(self, table_name, columns):
-        try:
-            self.drop_table_if_exists(table_name)
+        self.drop_table_if_exists(table_name)
 
-            type_mapping = {
-                'int': Integer,
-                'str': String,
-                'date': Date
-            }
-            table = Table(
-                table_name, self.metadata,
-                *(Column(column_name, type_mapping[column_type.lower()]) for column_name, column_type in
-                  columns.items())
-            )
-            table.create(self.engine)
-            logger.info(f"Таблица {table_name} создана.")
-        except SQLAlchemyError as e:
-            logger.info(f"Ошибка при создании таблицы: {e}")
+        table = Table(
+            table_name, self.metadata,
+            *(Column(column_name, type_mapping[column_type.lower()]) for column_name, column_type in
+              columns.items())
+        )
+        table.create(self.engine)
+        logger.info(f"Таблица {table_name} создана.")
 
     def insert_data(self, table_name: str, df: pd.DataFrame):
         """
         Вставляет данные в таблицу из DataFrame.
-
-        :param table_name: Название таблицы
-        :param df: DataFrame с данными для вставки
         """
         try:
             df.to_sql(table_name, self.engine, if_exists='append', index=False)
@@ -59,42 +57,34 @@ class DatabaseManager:
         except SQLAlchemyError as e:
             logger.info(f"Ошибка при вставке данных: {e}")
 
-    def execute_query(self, query: str):
+    def execute_query(self, query: str) -> Any:
         """
         Выполняет SQL-запрос.
-
-        :param query: SQL-запрос
-        :return: Результат выполнения запроса
         """
-        try:
-            with self.engine.connect() as connection:
+        result = None
+        with self.engine.connect() as connection:
+            try:
                 result = connection.execute(text(query))
                 logger.info(f"Запрос выполнен: {query}")
-                return result
-        except SQLAlchemyError as e:
-            logger.info(f"Ошибка при выполнении запроса: {e}")
-            return
+            except SQLAlchemyError as e:
+                logger.info(f"Ошибка при выполнении запроса: {e}")
 
-    def drop_table_if_exists(self, table_name: str):
+        return result
+
+    def drop_table_if_exists(self, table_name: str) -> None:
         """
         Удаляет таблицу, если она существует.
-
-        :param table_name: Название таблицы
         """
+        table = Table(table_name, self.metadata, autoload_with=self.engine)
         try:
-            table = Table(table_name, self.metadata, autoload_with=self.engine)
             table.drop(self.engine)
             logger.info(f"Таблица {table_name} удалена.")
         except SQLAlchemyError as e:
             logger.info(f"Ошибка при удалении таблицы: {e}")
 
-    def test_connection(self, retries: int = 5, delay: int = 2):
+    def test_connection(self, retries: int = 5, delay: int = 2) -> bool:
         """
         Тестирует подключение к базе данных.
-
-        :param retries: Количество попыток
-        :param delay: Задержка между попытками в секундах
-        :return: True, если подключение успешно, иначе False
         """
         for attempt in range(retries):
             try:
