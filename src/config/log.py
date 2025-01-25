@@ -1,11 +1,12 @@
-import logging
-from logging.handlers import RotatingFileHandler
 import gzip
+import logging
+import os
 import shutil
+from logging.handlers import RotatingFileHandler
+
 import structlog
 from structlog.contextvars import merge_contextvars
 from structlog.stdlib import ProcessorFormatter
-import os
 
 from src.config.config import settings
 
@@ -16,13 +17,13 @@ class GZipRotator:
         return name + ".gz"
 
     @staticmethod
-    def rotator(source, dest):
-        with open(source, 'rb') as f_in, gzip.open(dest, 'wb') as f_out:
+    def rotator(source, dest) -> None:
+        with open(source, "rb") as f_in, gzip.open(dest, "wb") as f_out:
             shutil.copyfileobj(f_in, f_out)
         os.remove(source)
 
 
-def setup_logging():
+def setup_logging() -> None:
     logging.basicConfig(level=settings.LogLevel, format=settings.LogFormat)
 
     handler = RotatingFileHandler("log.log",
@@ -44,9 +45,7 @@ def setup_logging():
     ]
 
     structlog.configure(
-        processors=pre_chain + [
-            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
-        ],
+        processors=[*pre_chain, structlog.stdlib.ProcessorFormatter.wrap_for_formatter],
         wrapper_class=structlog.stdlib.BoundLogger,
         context_class=dict,
         logger_factory=structlog.stdlib.LoggerFactory(),

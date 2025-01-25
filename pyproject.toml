@@ -1,0 +1,26 @@
+[lint.black]
+line-length = 100
+
+[tool.ruff]
+target-version = "py311"
+src = ["src"]
+ignore = ["D", "ANN10", "RUF001", "RUF012", "FIX", "TD002", "TD003"]
+select = ["ALL"]
+unfixable = ["E711", "E712"]
+line-length = 100
+
+[tool.ruff.per-file-ignores]
+"src/tests/*" = [
+    "S101",  # Use of `assert` detected
+    "PT004",  # Fixture `setup` does not return anything, add leading underscore
+    "ANN201",  # Missing return type annotation for public function `setup`
+]
+
+[lint.ruff.pylint]
+max-args = 6
+
+[lint.ruff.flake8-builtins]
+builtins-ignorelist = ["id", "type"]
+
+[lint.ruff.pep8-naming]
+classmethod-decorators = ["pydantic.validator"]

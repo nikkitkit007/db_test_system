@@ -11,7 +11,7 @@ logger = get_logger(__name__)
 
 
 class DockerManager:
-    def __init__(self):
+    def __init__(self) -> None:
         self.client = docker.from_env()
 
     def pull_image(self, image_name: str) -> Image | None:
@@ -29,7 +29,7 @@ class DockerManager:
 
         return image
 
-    def run_container(self, image_name: str, container_name: str, ports: dict = None, environment: dict = None):
+    def run_container(self, image_name: str, container_name: str, ports: dict | None = None, environment: dict | None = None):
         """
         Запускает контейнер с указанным образом.
 
@@ -48,7 +48,7 @@ class DockerManager:
                 name=container_name,
                 ports=ports,
                 environment=environment,
-                detach=True
+                detach=True,
             )
             self.wait_for_container_ready(container_name, ports)
             logger.info(f"Контейнер {container_name} запущен.")
@@ -57,7 +57,7 @@ class DockerManager:
             logger.info(f"Ошибка при запуске контейнера: {e}")
             return None
 
-    def stop_container(self, container_name: str):
+    def stop_container(self, container_name: str) -> None:
         """
         Останавливает и удаляет указанный контейнер.
 
@@ -71,20 +71,19 @@ class DockerManager:
         except NotFound:
             logger.warning(f"Контейнер {container_name} не найден.")
         except DockerException as e:
-            logger.error(f"Ошибка при остановке контейнера: {e}")
+            logger.exception(f"Ошибка при остановке контейнера: {e}")
 
     def list_containers(self, with_stopped: bool = True) -> list:
         """
         Возвращает список всех контейнеров.
         """
         try:
-            containers = self.client.containers.list(all=with_stopped)
-            return containers
+            return self.client.containers.list(all=with_stopped)
         except DockerException as e:
             logger.info(f"Ошибка при получении списка контейнеров: {e}")
             return []
 
-    def remove_container_if_exists(self, container_name: str):
+    def remove_container_if_exists(self, container_name: str) -> None:
         """
         Удаляет контейнер, если он существует.
         """
@@ -98,7 +97,7 @@ class DockerManager:
         except DockerException as e:
             logger.info(f"Ошибка при удалении контейнера: {e}")
 
-    def wait_for_container_ready(self, container_name: str, ports: dict, timeout: int = 60):
+    def wait_for_container_ready(self, container_name: str, ports: dict, timeout: int = 60) -> bool:
         """
         Ожидание готовности контейнера.
 
@@ -111,21 +110,22 @@ class DockerManager:
         start_time = time.time()
         while time.time() - start_time < timeout:
             container = self.client.containers.get(container_name)
-            if container.status == 'running':
+            if container.status == "running":
                 try:
-                    for port, host_port in ports.items():
+                    for port in ports:
                         if self.client.api.port(container.id, port):
                             logger.info(f"Контейнер {container_name} готов.")
                             return True
                 except DockerException:
                     pass
             time.sleep(1)
-        raise TimeoutError(f"Контейнер {container_name} не готов в течение {timeout} секунд.")
+        msg = f"Контейнер {container_name} не готов в течение {timeout} секунд."
+        raise TimeoutError(msg)
 
 
 # Пример использования модуля
 if __name__ == "__main__":
-    logger.info('test docker load')
+    logger.info("test docker load")
     db_image = "postgres:latest"
     db_container_name = "postgres_test"
     db_name = "test_db"
@@ -145,19 +145,19 @@ if __name__ == "__main__":
         image_name=db_image,
         container_name=db_container_name,
         ports={"5432/tcp": db_port},
-        environment={"POSTGRES_DB": db_name, "POSTGRES_USER": db_user, "POSTGRES_PASSWORD": db_password}
+        environment={"POSTGRES_DB": db_name, "POSTGRES_USER": db_user, "POSTGRES_PASSWORD": db_password},
     )
 
     time.sleep(10)  # Небольшая пауза для инициализации контейнера
 
     # Параметры подключения к базе данных
     db_manager = DatabaseManager(
-        db_type='postgresql',
+        db_type="postgresql",
         username=db_user,
         password=db_password,
         host=db_host,
         port=db_port,
-        db_name=db_name
+        db_name=db_name,
     )
     # Тест подключения
     if db_manager.test_connection():

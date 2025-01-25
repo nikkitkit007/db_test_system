@@ -1,32 +1,32 @@
 import random
 import string
 import time
+from functools import wraps
 
 import pandas as pd
 import psutil
 
-from src.config.log import get_logger
 from manager.db_manager import DatabaseManager
-from functools import wraps
+from src.config.log import get_logger
 
 logger = get_logger(__name__)
 
 
-def generate_csv(file_name, num_records, data_types):
+def generate_csv(file_name, num_records, data_types) -> None:
     data = []
     type_map = {
-        'int': lambda: random.randint(1, 1000),
-        'str': lambda: ''.join(random.choices(string.ascii_letters, k=10)),
-        'date': lambda: pd.Timestamp('today').strftime("%Y-%m-%d")
+        "int": lambda: random.randint(1, 1000),
+        "str": lambda: "".join(random.choices(string.ascii_letters, k=10)),
+        "date": lambda: pd.Timestamp("today").strftime("%Y-%m-%d"),
     }
     for _ in range(num_records):
-        row = {f'col_{i + 1}': type_map[dt]() for i, dt in enumerate(data_types)}
+        row = {f"col_{i + 1}": type_map[dt]() for i, dt in enumerate(data_types)}
         data.append(row)
 
     df = pd.DataFrame(data)
     df.to_csv(file_name, index=False)
 
-    logger.info(f'CSV file {file_name} with {num_records} records generated.')
+    logger.info(f"CSV file {file_name} with {num_records} records generated.")
 
 
 def measure_performance(sqlite_manager):
@@ -45,11 +45,11 @@ def measure_performance(sqlite_manager):
             execution_time = round(end_time - start_time, 5)
             memory_used = round((memory_after - memory_before) / 1024 / 1024, 5)
 
-            timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+            timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
             db_image = args[0].db_image
             operation = args[0].operation
             num_records = args[0].num_records
-            data_types = ','.join(args[0].data_types)
+            data_types = ",".join(args[0].data_types)
 
             sqlite_manager.insert_result(timestamp, db_image, operation, num_records, data_types,
                                          execution_time,
@@ -65,7 +65,7 @@ def measure_performance(sqlite_manager):
     return decorator
 
 
-def load_csv_to_db(csv_file: str, db_manager: DatabaseManager, table_name: str):
+def load_csv_to_db(csv_file: str, db_manager: DatabaseManager, table_name: str) -> None:
     """
     Загружает данные из CSV файла в базу данных.
 
@@ -74,12 +74,12 @@ def load_csv_to_db(csv_file: str, db_manager: DatabaseManager, table_name: str):
     :param table_name: Название таблицы в базе данных
     """
     df = pd.read_csv(csv_file)
-    columns = {col: 'str' for col in df.columns}  # Используем 'str' для простоты
+    columns = {col: "str" for col in df.columns}  # Используем 'str' для простоты
     db_manager.create_table(table_name, columns)
     db_manager.insert_data(table_name, df)
 
 
-def execute_and_measure(db_manager, query):
+def execute_and_measure(db_manager, query) -> None:
     process = psutil.Process()
     memory_before = process.memory_info().rss
 

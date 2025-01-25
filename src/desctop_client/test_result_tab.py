@@ -1,24 +1,34 @@
 import sys
 
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QPushButton, QListWidget, QMessageBox, QTableWidgetItem, QTableWidget
+from PyQt5.QtWidgets import (
+    QApplication,
+    QLabel,
+    QListWidget,
+    QMessageBox,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
 
 from src.storage.test_result_storage import sqlite_manager
 
 
 class TestResultsApp(QWidget):
-    def __init__(self, ):
+    def __init__(self ) -> None:
         super().__init__()
 
         self.initUI()
         self.load_results()
 
-    def initUI(self):
-        self.setWindowTitle('Test Results Manager')
+    def initUI(self) -> None:
+        self.setWindowTitle("Test Results Manager")
 
         layout = QVBoxLayout()
 
-        font = QFont('Arial', 14)
+        font = QFont("Arial", 14)
 
         # List Widget for displaying test results
         self.results_list = QListWidget()
@@ -28,7 +38,7 @@ class TestResultsApp(QWidget):
         layout.addWidget(self.results_list)
 
         # Table for displaying selected test result details
-        self.details_label = QLabel('Test Details:')
+        self.details_label = QLabel("Test Details:")
         self.details_label.setFont(font)
         layout.addWidget(self.details_label)
 
@@ -36,13 +46,13 @@ class TestResultsApp(QWidget):
         self.details_table.setFont(font)
         self.details_table.setColumnCount(7)
         self.details_table.setHorizontalHeaderLabels(
-            ['Timestamp', 'DB Image', 'Operation', 'Num Records', 'Data Types', 'Execution Time', 'Memory Used'])
+            ["Timestamp", "DB Image", "Operation", "Num Records", "Data Types", "Execution Time", "Memory Used"])
         self.details_table.horizontalHeader().setStretchLastSection(True)
 
         layout.addWidget(self.details_table)
 
         # Button to delete selected test result
-        self.delete_button = QPushButton('Delete Selected Result')
+        self.delete_button = QPushButton("Delete Selected Result")
         self.delete_button.setFont(font)
         self.delete_button.clicked.connect(self.delete_selected_result)
 
@@ -50,7 +60,7 @@ class TestResultsApp(QWidget):
 
         self.setLayout(layout)
 
-    def load_results(self):
+    def load_results(self) -> None:
         """ Загружает результаты тестов из базы данных и отображает их в списке """
         self.results_list.clear()
         results = sqlite_manager.select_all_results()
@@ -58,7 +68,7 @@ class TestResultsApp(QWidget):
             self.results_list.addItem(
                 f"ID: {result[0]}, Timestamp: {result[1]}, DB Image: {result[2]}, Operation: {result[3]}")
 
-    def display_result_details(self, item):
+    def display_result_details(self, item) -> None:
         """ Отображает детали выбранного результата теста """
         result_id = int(item.text().split(",")[0].split(":")[1].strip())
         result = sqlite_manager.select_result_by_id(result_id)
@@ -76,7 +86,7 @@ class TestResultsApp(QWidget):
             self.details_table.setItem(0, 5, QTableWidgetItem(str(result[6])))
             self.details_table.setItem(0, 6, QTableWidgetItem(str(result[7])))
 
-    def delete_selected_result(self):
+    def delete_selected_result(self) -> None:
         """ Удаляет выбранный результат теста """
         selected_item = self.results_list.currentItem()
         if selected_item:
@@ -88,7 +98,7 @@ class TestResultsApp(QWidget):
             QMessageBox.warning(self, "Warning", "No result selected to delete!")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app = QApplication(sys.argv)
     ex = TestResultsApp()
     ex.show()

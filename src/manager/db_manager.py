@@ -2,22 +2,23 @@ import time
 from typing import Any
 
 import pandas as pd
-from sqlalchemy import create_engine, MetaData, Table, Column, String, Date, Integer, text
+from sqlalchemy import Column, Date, Integer, MetaData, String, Table, create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
+
 from src.config.log import get_logger
 
 logger = get_logger(__name__)
 
 type_mapping = {
-                'int': Integer,
-                'str': String,
-                'date': Date
+                "int": Integer,
+                "str": String,
+                "date": Date,
             }
 
 
 class DatabaseManager:
-    def __init__(self, db_type, username, password, host, port, db_name):
+    def __init__(self, db_type, username, password, host, port, db_name) -> None:
         self.db_type = db_type
         self.username = username
         self.password = password
@@ -30,29 +31,30 @@ class DatabaseManager:
 
         if not self.test_connection():
             logger.error("Не удалось подключиться к базе данных после нескольких попыток.")
-            raise ConnectionError("Failed to connect to the database.")
+            msg = "Failed to connect to the database."
+            raise ConnectionError(msg)
 
     def create_engine(self):
         db_url = f"{self.db_type}://{self.username}:{self.password}@{self.host}:{self.port}/{self.db_name}"
         return create_engine(db_url)
 
-    def create_table(self, table_name, columns):
+    def create_table(self, table_name, columns) -> None:
         self.drop_table_if_exists(table_name)
 
         table = Table(
             table_name, self.metadata,
             *(Column(column_name, type_mapping[column_type.lower()]) for column_name, column_type in
-              columns.items())
+              columns.items()),
         )
         table.create(self.engine)
         logger.info(f"Таблица {table_name} создана.")
 
-    def insert_data(self, table_name: str, df: pd.DataFrame):
+    def insert_data(self, table_name: str, df: pd.DataFrame) -> None:
         """
         Вставляет данные в таблицу из DataFrame.
         """
         try:
-            df.to_sql(table_name, self.engine, if_exists='append', index=False)
+            df.to_sql(table_name, self.engine, if_exists="append", index=False)
             logger.info(f"Данные вставлены в таблицу {table_name}.")
         except SQLAlchemyError as e:
             logger.info(f"Ошибка при вставке данных: {e}")
@@ -86,7 +88,7 @@ class DatabaseManager:
         """
         Тестирует подключение к базе данных.
         """
-        for attempt in range(retries):
+        for _attempt in range(retries):
             try:
                 with self.engine.connect() as connection:
                     connection.execute(text("SELECT 1"))
@@ -98,7 +100,7 @@ class DatabaseManager:
         return False
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     db_image = "postgres:latest"
     db_container_name = "postgres_test"
     db_name = "test_db"
@@ -109,12 +111,12 @@ if __name__ == '__main__':
 
     # Параметры подключения к базе данных
     db_manager = DatabaseManager(
-        db_type='postgresql',
+        db_type="postgresql",
         username=db_user,
         password=db_password,
         host=db_host,
         port=db_port,
-        db_name=db_name
+        db_name=db_name,
     )
     # Тест подключения
     if db_manager.test_connection():

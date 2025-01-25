@@ -2,17 +2,18 @@ import sqlite3
 from contextlib import contextmanager
 from sqlite3 import Error
 
+from sqlalchemy import create_engine
+from sqlalchemy.orm import scoped_session, sessionmaker
+
 from src.config.config import settings
 from src.config.log import get_logger
 from src.storage.model import TestResults
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, scoped_session
 
 logger = get_logger(__name__)
 
 
 class SQLiteManager:
-    def __init__(self, db_file: str):
+    def __init__(self, db_file: str) -> None:
         self.db_file = db_file
         # self.conn = self.create_connection()
         self.engine = create_engine(db_file)
@@ -27,7 +28,7 @@ class SQLiteManager:
             session.commit()
         except Exception as e:
             session.rollback()
-            logger.error(f"Ошибка при работе с сессией: {e}")
+            logger.exception(f"Ошибка при работе с сессией: {e}")
             raise
         finally:
             session.close()
@@ -53,7 +54,7 @@ class SQLiteManager:
                 num_records=num_records,
                 data_types=data_types,
                 execution_time=execution_time,
-                memory_used=memory_used
+                memory_used=memory_used,
             )
             session.add(new_result)
             logger.info("Запись успешно добавлена в базу данных.")
@@ -66,15 +67,15 @@ class SQLiteManager:
         # self.conn.commit()
         # return cur.lastrowid
 
-    def delete_result(self, id: int):
+    def delete_result(self, record_id: int) -> None:
         """ Удаление записи из таблицы результатов тестов по ID """
         with self.session_scope() as session:
-            result = session.get(TestResults, id)
+            result = session.get(TestResults, record_id)
             if result:
                 session.delete(result)
-                logger.info(f"Запись с ID {id} удалена из базы данных.")
+                logger.info(f"Запись с ID {record_id} удалена из базы данных.")
             else:
-                logger.warning(f"Запись с ID {id} не найдена.")
+                logger.warning(f"Запись с ID {record_id} не найдена.")
 
         # sql = 'DELETE FROM test_results WHERE id=?'
         # cur = self.conn.cursor()

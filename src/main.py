@@ -1,19 +1,19 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QTabWidget
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QVBoxLayout, QWidget
 
 from desctop_client.test_conf_tab import ConfigApp
 from desctop_client.test_result_tab import TestResultsApp
 
 
 class MainApp(QMainWindow):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
-        self.setWindowTitle('Database Test System')
+        self.setWindowTitle("Database Test System")
         self.setGeometry(100, 100, 800, 600)
 
         self.initUI()
 
-    def initUI(self):
+    def initUI(self) -> None:
         central_widget = QWidget()
         layout = QVBoxLayout()
 
@@ -33,7 +33,7 @@ class MainApp(QMainWindow):
         self.test_config_app.test_completed.connect(self.test_results_app.load_results)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
     app = QApplication(sys.argv)
     main_app = MainApp()
