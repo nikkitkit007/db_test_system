@@ -1,5 +1,3 @@
-import logging
-
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
@@ -16,7 +14,13 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-logger = logging.getLogger(__name__)
+from src.config.log import get_logger
+from src.manager.db_manager import DatabaseManager
+from src.manager.docker_manager import DockerManager
+from src.storage.test_result_storage import sqlite_manager
+from src.utils import clear_container_name, generate_csv, load_csv_to_db, measure_performance
+
+logger = get_logger(__name__)
 
 
 class ConfigApp(QWidget):
@@ -24,8 +28,10 @@ class ConfigApp(QWidget):
 
     def __init__(self) -> None:
         super().__init__()
+        self.docker_manager = DockerManager()
         self.initUI()
         self.reset_parameters()
+        self.load_docker_images()
 
     def initUI(self) -> None:
         self.setWindowTitle("Docker Configurator")
@@ -111,11 +117,24 @@ class ConfigApp(QWidget):
         self.num_records = 0
         self.data_types = []
 
+    def load_docker_images(self) -> None:
+        """Загружает образы Docker из базы данных в выпадающий список."""
+        try:
+            docker_images = sqlite_manager.get_all_docker_images()  # Получаем все образы
+            self.db_image_combo.clear()  # Очищаем список
+            for image in docker_images:
+                self.db_image_combo.addItem(image.name)  # Добавляем образы в список
+            logger.info("Docker-образы успешно загружены в интерфейс.")
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось загрузить Docker-образы: {e!s}")
+            logger.exception(f"Ошибка при загрузке Docker-образов: {e}")
+
     def add_custom_image(self) -> None:
         custom_image = self.custom_image_edit.text().strip()
         if not custom_image:
             QMessageBox.warning(self, "Ошибка", "Имя образа не может быть пустым.")
             return
+        sqlite_manager.add_docker_image(name=custom_image)
         logger.info(f"Добавлен образ: {custom_image}")
         self.db_image_combo.addItem(custom_image)
         QMessageBox.information(self, "Успех", f"Образ '{custom_image}' добавлен.")
@@ -128,10 +147,6 @@ class ConfigApp(QWidget):
         logger.info(f"Удален образ: {selected_image}")
         self.db_image_combo.removeItem(self.db_image_combo.currentIndex())
         QMessageBox.information(self, "Успех", f"Образ '{selected_image}' удален.")
-
-    def start_process(self) -> None:
-        self.update_preview()
-        QMessageBox.information(self, "Информация", "Тест успешно запущен!")
 
     def update_preview(self) -> None:
         self.db_image = self.db_image_combo.currentText()
@@ -146,3 +161,39 @@ class ConfigApp(QWidget):
             f"Типы данных: {self.data_types}"
         )
         self.preview_text.setText(preview)
+
+    def start_process(self) -> None:
+        self.update_preview()
+        QMessageBox.information(self, "Информация", "Тест успешно запущен!")
+        try:
+            self.db_image = self.db_image_combo.currentText()
+            self.operation = self.operation_combo.currentText()
+            self.num_records = self.records_spinbox.value()
+            self.data_types = [dt.strip() for dt in self.data_types_edit.text().split(",") or []]
+
+            if not self.data_types:
+                msg = "Список типов данных пуст."
+                raise ValueError(msg)
+
+            logger.info(f"Запуск теста с образом: {self.db_image}, операция: {self.operation}")
+            self.setup_docker_and_test()
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Ошибка запуска теста: {e!s}")
+            logger.exception(f"Ошибка запуска теста: {e}")
+
+    def setup_docker_and_test(self) -> None:
+        self.docker_manager.pull_image(self.db_image)
+        container_name = f"{clear_container_name(self.db_image)}_test"
+        self.docker_manager.run_container(self.db_image, container_name)
+        self.generate_and_test()
+        generate_csv("test_data.csv", self.num_records, self.data_types)
+        db_manager = DatabaseManager(
+            db_type="postgresql", username="user", password="password",
+            host="localhost", port=5432, db_name="test_db",
+        )
+        self.load_test("test_data.csv", db_manager, "test_table")
+        self.test_completed.emit()
+
+    @measure_performance(sqlite_manager)
+    def load_test(self, csv_file, db_manager, table) -> None:
+        load_csv_to_db(csv_file, db_manager, table)

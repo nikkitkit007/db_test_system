@@ -1,10 +1,12 @@
+import os
+
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QVBoxLayout, QWidget
 
+from config.config import settings
 from desctop_client.test_conf_tab import ConfigApp
 from desctop_client.test_result_tab import TestResultsApp
-import os
-from config.config import settings
+
 
 class MainApp(QMainWindow):
     def __init__(self) -> None:

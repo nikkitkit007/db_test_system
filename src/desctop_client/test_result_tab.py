@@ -82,7 +82,7 @@ class TestResultsApp(QWidget):
             self.details_table.setItem(0, 5, QTableWidgetItem(f"{result.execution_time:.2f}"))
             self.details_table.setItem(0, 6, QTableWidgetItem(f"{result.memory_used:.2f}"))
 
-    def delete_selected_result(self):
+    def delete_selected_result(self) -> None:
         selected_item = self.results_list.currentItem()
         if not selected_item:
             QMessageBox.warning(self, "Ошибка", "Выберите результат для удаления.")
@@ -91,7 +91,7 @@ class TestResultsApp(QWidget):
         reply = QMessageBox.question(
             self, "Подтверждение",
             "Вы уверены, что хотите удалить выбранный результат?",
-            QMessageBox.Yes | QMessageBox.No
+            QMessageBox.Yes | QMessageBox.No,
         )
 
         if reply == QMessageBox.Yes:
