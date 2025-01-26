@@ -1,4 +1,5 @@
 import random
+import re
 import string
 import time
 from functools import wraps
@@ -8,19 +9,20 @@ import psutil
 
 from manager.db_manager import DatabaseManager
 from src.config.log import get_logger
+from src.schemas.enums import DataType
 
 logger = get_logger(__name__)
 
 
-def generate_csv(file_name, num_records, data_types) -> None:
+def generate_csv(file_name: str, num_records: int, data_types: list[DataType]) -> None:
     data = []
     type_map = {
-        "int": lambda: random.randint(1, 1000),
-        "str": lambda: "".join(random.choices(string.ascii_letters, k=10)),
-        "date": lambda: pd.Timestamp("today").strftime("%Y-%m-%d"),
+        DataType.int: lambda: random.randint(1, 1000),
+        DataType.str: lambda: "".join(random.choices(string.ascii_letters, k=10)),
+        DataType.date: lambda: pd.Timestamp("today").strftime("%Y-%m-%d"),
     }
     for _ in range(num_records):
-        row = {f"col_{i + 1}": type_map[dt]() for i, dt in enumerate(data_types)}
+        row = {f"col_{i + 1}": type_map.get(dt, type_map[DataType.str])() for i, dt in enumerate(data_types)}
         data.append(row)
 
     df = pd.DataFrame(data)
@@ -94,3 +96,7 @@ def execute_and_measure(db_manager, query) -> None:
 
     logger.info(f"Execution time: {execution_time} seconds")
     logger.info(f"Memory used: {memory_used / 1024 / 1024} MB")
+
+
+def clear_container_name(name: str) -> str:
+    return re.sub(r"[^a-zA-Z0-9._-]", "_", name)

@@ -25,11 +25,11 @@ class DockerManager:
             image = self.client.images.pull(image_name)
             logger.info(f"Образ {image_name} успешно загружен.")
         except docker.errors.ImageNotFound:
-            logger.error(f"Образ {image_name} не найден в Docker Hub.")
+            logger.exception(f"Образ {image_name} не найден в Docker Hub.")
         except docker.errors.APIError as e:
-            logger.error(f"Ошибка API при загрузке образа {image_name}: {e}")
+            logger.exception(f"Ошибка API при загрузке образа {image_name}: {e}")
         except DockerException as e:
-            logger.error(f"Общая ошибка при загрузке образа {image_name}: {e}")
+            logger.exception(f"Общая ошибка при загрузке образа {image_name}: {e}")
         return image
 
     def run_container(self, image_name: str, container_name: str, ports: dict | None = None, environment: dict | None = None):

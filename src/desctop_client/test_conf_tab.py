@@ -18,7 +18,7 @@ from src.config.log import get_logger
 from src.manager.db_manager import DatabaseManager
 from src.manager.docker_manager import DockerManager
 from src.storage.test_result_storage import sqlite_manager
-from src.utils import generate_csv, load_csv_to_db, measure_performance
+from src.utils import clear_container_name, generate_csv, load_csv_to_db, measure_performance
 
 logger = get_logger(__name__)
 
@@ -34,7 +34,7 @@ class ConfigApp(QWidget):
 
         self.db_image = ""
         self.operation = ""
-        self.num_records = ""
+        self.num_records = None
         self.data_types = []
 
     def initUI(self) -> None:
@@ -121,16 +121,23 @@ class ConfigApp(QWidget):
         # Запуск контейнера
         self.docker_manager.run_container(
             image_name=self.db_image,
-            container_name=f"{self.db_image}_test",
+            container_name=f"{clear_container_name(self.db_image)}_test",
             ports={"5432/tcp": port},
-            environment={"POSTGRES_DB": db_name, "POSTGRES_USER": user, "POSTGRES_PASSWORD": password},
+            # environment={"POSTGRES_DB": db_name, "POSTGRES_USER": user, "POSTGRES_PASSWORD": password},
         )
 
         self.generate_csv_and_load_data(db_name, user, password, host,
                                         port)
 
     def generate_csv_and_load_data(self,
-                                   db_name: str, user: str, password: str, host: str, port: int) -> None:
+                                   db_name: str,
+                                   user: str,
+                                   password: str,
+                                   host: str,
+                                   port: int,
+                                   ) -> None:
+        if not self.num_records:
+            return
         generate_csv(settings.CSV_FILE_WITH_TEST_DATA, self.num_records, self.data_types)
 
         # Параметры подключения к базе данных
