@@ -1,8 +1,10 @@
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QVBoxLayout, QWidget
 
 from desctop_client.test_conf_tab import ConfigApp
 from desctop_client.test_result_tab import TestResultsApp
-
+import os
+from config.config import settings
 
 class MainApp(QMainWindow):
     def __init__(self) -> None:
@@ -27,8 +29,12 @@ class MainApp(QMainWindow):
         # Добавляем вкладки
         self.test_config_app = ConfigApp()
         self.test_results_app = TestResultsApp()
-        self.tabs.addTab(self.test_config_app, "Docker Configurator")
-        self.tabs.addTab(self.test_results_app, "Test Results")
+
+        test_config_icon = QIcon(os.path.join(settings.ICONS_PATH, "test_config_icon.webp"))
+        results_icon = QIcon(os.path.join(settings.ICONS_PATH, "results_icon.svg"))
+
+        self.tabs.addTab(self.test_config_app, test_config_icon, "Test Configurator")
+        self.tabs.addTab(self.test_results_app, results_icon, "Test Results")
 
         # Добавляем вкладки в макет
         layout.addWidget(self.tabs)

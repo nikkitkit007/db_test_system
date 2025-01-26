@@ -82,15 +82,22 @@ class TestResultsApp(QWidget):
             self.details_table.setItem(0, 5, QTableWidgetItem(f"{result.execution_time:.2f}"))
             self.details_table.setItem(0, 6, QTableWidgetItem(f"{result.memory_used:.2f}"))
 
-    def delete_selected_result(self) -> None:
+    def delete_selected_result(self):
         selected_item = self.results_list.currentItem()
         if not selected_item:
             QMessageBox.warning(self, "Ошибка", "Выберите результат для удаления.")
             return
 
-        result_id = int(selected_item.text().split(",")[0].split(":")[1].strip())
-        sqlite_manager.delete_result(result_id)
-        self.load_results()
+        reply = QMessageBox.question(
+            self, "Подтверждение",
+            "Вы уверены, что хотите удалить выбранный результат?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+
+        if reply == QMessageBox.Yes:
+            result_id = int(selected_item.text().split(",")[0].split(":")[1].strip())
+            sqlite_manager.delete_result(result_id)
+            self.load_results()
 
     def visualize_results(self) -> None:
         """Визуализирует данные на основе выбранного типа визуализации"""
@@ -143,10 +150,3 @@ class TestResultsApp(QWidget):
         plt.title("Гистограмма количества записей")
         plt.grid(axis="y")
         plt.show()
-
-
-# if __name__ == "__main__":
-#     app = QApplication(sys.argv)
-#     ex = TestResultsApp()
-#     ex.show()
-#     sys.exit(app.exec_())
