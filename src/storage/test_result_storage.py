@@ -2,7 +2,7 @@ import sqlite3
 from contextlib import contextmanager
 from sqlite3 import Error
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 from src.config.config import settings
@@ -23,6 +23,7 @@ class SQLiteManager:
     def session_scope(self):
         """Контекстный менеджер для сессии."""
         session = self.Session()
+        session.expire_on_commit = False
         try:
             yield session
             session.commit()
@@ -70,10 +71,10 @@ class SQLiteManager:
             else:
                 logger.warning(f"Запись с ID {record_id} не найдена.")
 
-    def select_all_results(self):
+    def select_all_results(self) -> list[TestResults]:
         """ Выбор всех записей из таблицы результатов тестов """
         with self.session_scope() as session:
-            results = session.query(TestResults).all()
+            results = session.scalars(select(TestResults)).all()
             logger.info("Получены все записи из базы данных.")
             return results
 
