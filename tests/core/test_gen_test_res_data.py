@@ -4,7 +4,7 @@ from datetime import datetime
 from src.storage.test_result_storage import sqlite_manager
 
 
-def test_generate_test_results(num_results: int = 10):
+def test_generate_test_results(num_results: int = 10) -> None:
     """
     Генерирует временные результаты тестов и сохраняет их в базе данных.
 
@@ -31,7 +31,7 @@ def test_generate_test_results(num_results: int = 10):
             num_records=num_records,
             data_types=data_types,
             execution_time=execution_time,
-            memory_used=memory_used
+            memory_used=memory_used,
         )
 
     test_results = sqlite_manager.select_all_results()

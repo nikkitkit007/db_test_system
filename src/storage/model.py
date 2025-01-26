@@ -1,5 +1,5 @@
 
-from sqlalchemy import Column, Float, Integer, Text
+from sqlalchemy import Column, Float, Integer, String, Text
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
@@ -16,3 +16,10 @@ class TestResults(Base):
     data_types = Column(Text, nullable=False)
     execution_time = Column(Float, nullable=True)
     memory_used = Column(Float, nullable=True)
+
+
+class DockerImage(Base):
+    __tablename__ = "docker_image"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, unique=True, nullable=False)
