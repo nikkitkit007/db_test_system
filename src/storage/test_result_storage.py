@@ -60,13 +60,6 @@ class SQLiteManager:
             logger.info("Запись успешно добавлена в базу данных.")
             return new_result.id
 
-        # sql = ''' INSERT INTO test_results(timestamp, db_image, operation, num_records, data_types, execution_time, memory_used)
-        #           VALUES(?,?,?,?,?,?,?) '''
-        # cur = self.conn.cursor()
-        # cur.execute(sql, (timestamp, db_image, operation, num_records, data_types, execution_time, memory_used))
-        # self.conn.commit()
-        # return cur.lastrowid
-
     def delete_result(self, record_id: int) -> None:
         """ Удаление записи из таблицы результатов тестов по ID """
         with self.session_scope() as session:
@@ -76,11 +69,6 @@ class SQLiteManager:
                 logger.info(f"Запись с ID {record_id} удалена из базы данных.")
             else:
                 logger.warning(f"Запись с ID {record_id} не найдена.")
-
-        # sql = 'DELETE FROM test_results WHERE id=?'
-        # cur = self.conn.cursor()
-        # cur.execute(sql, (id,))
-        # self.conn.commit()
 
     def select_all_results(self):
         """ Выбор всех записей из таблицы результатов тестов """
