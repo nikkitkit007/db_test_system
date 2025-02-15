@@ -1,3 +1,4 @@
+import json
 import sqlite3
 from contextlib import contextmanager
 from sqlite3 import Error
@@ -35,7 +36,7 @@ class SQLiteManager:
             session.close()
 
     def create_connection(self):
-        """ Создание соединения с базой данных SQLite """
+        """Создание соединения с базой данных SQLite"""
         conn = None
         try:
             conn = sqlite3.connect(self.db_file)
@@ -44,9 +45,17 @@ class SQLiteManager:
             logger.info(f"Ошибка при соединении с базой данных SQLite: {e}")
         return conn
 
-    def insert_result(self, timestamp: str, db_image: str, operation: str, num_records: int, data_types: str,
-                      execution_time: float, memory_used: float):
-        """ Вставка записи в таблицу результатов тестов """
+    def insert_result(
+        self,
+        timestamp: str,
+        db_image: str,
+        operation: str,
+        num_records: int,
+        data_types: str,
+        execution_time: float,
+        memory_used: float,
+    ):
+        """Вставка записи в таблицу результатов тестов"""
         with self.session_scope() as session:
             new_result = TestResults(
                 timestamp=timestamp,
@@ -62,7 +71,7 @@ class SQLiteManager:
             return new_result.id
 
     def delete_result(self, record_id: int) -> None:
-        """ Удаление записи из таблицы результатов тестов по ID """
+        """Удаление записи из таблицы результатов тестов по ID"""
         with self.session_scope() as session:
             result = session.get(TestResults, record_id)
             if result:
@@ -72,14 +81,14 @@ class SQLiteManager:
                 logger.warning(f"Запись с ID {record_id} не найдена.")
 
     def select_all_results(self) -> list[TestResults]:
-        """ Выбор всех записей из таблицы результатов тестов """
+        """Выбор всех записей из таблицы результатов тестов"""
         with self.session_scope() as session:
             results = session.scalars(select(TestResults)).all()
             logger.info("Получены все записи из базы данных.")
             return results
 
     def select_result_by_id(self, id: int):
-        """ Выбор записи из таблицы результатов тестов по ID """
+        """Выбор записи из таблицы результатов тестов по ID"""
         with self.session_scope() as session:
             result = session.get(TestResults, id)
             if result:
@@ -87,6 +96,10 @@ class SQLiteManager:
             else:
                 logger.warning(f"Запись с ID {id} не найдена.")
             return result
+
+    # -------------------------------------------------------------------------
+    # Методы для работы с Docker-образами (DockerImage)
+    # -------------------------------------------------------------------------
 
     def add_docker_image(self, name: str) -> int:
         """Добавляет новый Docker-образ в базу данных."""
@@ -124,6 +137,34 @@ class SQLiteManager:
                 raise ValueError(msg)
             return image
 
+    def add_or_update_db_config(self, name: str, config_dict: dict) -> None:
+        """
+        Добавляет или обновляет JSON-конфигурацию (DB_CONFIGS-подобную) для Docker-образа.
+        :param name: название Docker-образа
+        :param config_dict: словарь вида:
+            {
+              "db_type": "...",
+              "default_user": "...",
+              "default_password": "...",
+              "default_port": 1234,
+              "default_db": "...",
+              "env": {...},
+              ...
+            }
+        """
+        with self.session_scope() as session:
+            image = session.query(DockerImage).filter(DockerImage.name == name).first()
+            image.config = json.dumps(config_dict)
+            logger.info(f"Обновлен config у Docker-образа '{name}'.")
+
+    def get_db_config(self, name: str) -> dict:
+        """
+        Возвращает конфигурацию (JSON -> dict) для указанного Docker-образа.
+        :param name: название Docker-образа
+        :return: словарь config
+        """
+        image = self.get_image_by_name(name)
+        return json.loads(image.config) if image.config else {}
+
 
 sqlite_manager = SQLiteManager(settings.SQLITE_DB_URL)
-

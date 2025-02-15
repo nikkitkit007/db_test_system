@@ -32,7 +32,13 @@ class DockerManager:
             logger.exception(f"Общая ошибка при загрузке образа {image_name}: {e}")
         return image
 
-    def run_container(self, image_name: str, container_name: str, ports: dict | None = None, environment: dict | None = None):
+    def run_container(
+        self,
+        image_name: str,
+        container_name: str,
+        ports: dict | None = None,
+        environment: dict | None = None,
+    ):
         """
         Запускает контейнер с указанным образом.
 
@@ -101,7 +107,12 @@ class DockerManager:
         except DockerException as e:
             logger.info(f"Ошибка при удалении контейнера: {e}")
 
-    def wait_for_container_ready(self, container_name: str, ports: dict, timeout: int = 20) -> bool:
+    def wait_for_container_ready(
+        self,
+        container_name: str,
+        ports: dict,
+        timeout: int = 20,
+    ) -> bool:
         """
         Ожидание готовности контейнера.
 
@@ -149,7 +160,11 @@ if __name__ == "__main__":
         image_name=db_image,
         container_name=db_container_name,
         ports={"5432/tcp": db_port},
-        environment={"POSTGRES_DB": db_name, "POSTGRES_USER": db_user, "POSTGRES_PASSWORD": db_password},
+        environment={
+            "POSTGRES_DB": db_name,
+            "POSTGRES_USER": db_user,
+            "POSTGRES_PASSWORD": db_password,
+        },
     )
 
     time.sleep(10)  # Небольшая пауза для инициализации контейнера

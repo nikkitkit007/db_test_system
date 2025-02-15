@@ -26,9 +26,11 @@ class GZipRotator:
 def setup_logging() -> None:
     logging.basicConfig(level=settings.LogLevel, format=settings.LogFormat)
 
-    handler = RotatingFileHandler("log.log",
-                                  maxBytes=settings.LogFileSizeMB * 1024 * 1024,
-                                  backupCount=settings.LogFileCount)
+    handler = RotatingFileHandler(
+        "log.log",
+        maxBytes=settings.LogFileSizeMB * 1024 * 1024,
+        backupCount=settings.LogFileCount,
+    )
     handler.setFormatter(logging.Formatter(settings.LogFormat))
     handler.namer = GZipRotator.namer
     handler.rotator = GZipRotator.rotator
@@ -37,11 +39,13 @@ def setup_logging() -> None:
         merge_contextvars,
         structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S", utc=True),
         structlog.processors.add_log_level,
-        structlog.processors.CallsiteParameterAdder({
-            structlog.processors.CallsiteParameter.FILENAME,
-            structlog.processors.CallsiteParameter.FUNC_NAME,
-            structlog.processors.CallsiteParameter.LINENO,
-        }),
+        structlog.processors.CallsiteParameterAdder(
+            {
+                structlog.processors.CallsiteParameter.FILENAME,
+                structlog.processors.CallsiteParameter.FUNC_NAME,
+                structlog.processors.CallsiteParameter.LINENO,
+            },
+        ),
     ]
 
     structlog.configure(
@@ -52,10 +56,12 @@ def setup_logging() -> None:
         cache_logger_on_first_use=True,
     )
 
-    handler.setFormatter(ProcessorFormatter(
-        processor=structlog.processors.JSONRenderer(),
-        foreign_pre_chain=pre_chain,
-    ))
+    handler.setFormatter(
+        ProcessorFormatter(
+            processor=structlog.processors.JSONRenderer(),
+            foreign_pre_chain=pre_chain,
+        ),
+    )
 
     root_logger = logging.getLogger()
     root_logger.addHandler(handler)

@@ -1,4 +1,3 @@
-
 from sqlalchemy import Column, Float, Integer, String, Text
 from sqlalchemy.orm import declarative_base
 
@@ -23,3 +22,4 @@ class DockerImage(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, unique=True, nullable=False)
+    config = Column(Text, nullable=True)

@@ -32,7 +32,9 @@ class MainApp(QMainWindow):
         self.test_config_app = ConfigApp()
         self.test_results_app = TestResultsApp()
 
-        test_config_icon = QIcon(os.path.join(settings.ICONS_PATH, "test_config_icon.webp"))
+        test_config_icon = QIcon(
+            os.path.join(settings.ICONS_PATH, "test_config_icon.webp"),
+        )
         results_icon = QIcon(os.path.join(settings.ICONS_PATH, "results_icon.svg"))
 
         self.tabs.addTab(self.test_config_app, test_config_icon, "Test Configurator")
@@ -132,6 +134,7 @@ class MainApp(QMainWindow):
 
 if __name__ == "__main__":
     import sys
+
     app = QApplication(sys.argv)
     main_app = MainApp()
     main_app.show()

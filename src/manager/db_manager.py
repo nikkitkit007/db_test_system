@@ -2,7 +2,16 @@ import time
 from typing import Any
 
 import pandas as pd
-from sqlalchemy import Column, Date, Integer, MetaData, String, Table, create_engine, text
+from sqlalchemy import (
+    Column,
+    Date,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    create_engine,
+    text,
+)
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 
@@ -19,13 +28,13 @@ type_mapping = {
 
 class DatabaseManager:
     def __init__(
-            self,
-            db_type: str,
-            username: str,
-            password: str,
-            host: str,
-            port: int,
-            db_name: str,
+        self,
+        db_type: str,
+        username: str,
+        password: str,
+        host: str,
+        port: int,
+        db_name: str,
     ) -> None:
         self.db_type = db_type
         self.username = username
@@ -38,7 +47,9 @@ class DatabaseManager:
         self.metadata = MetaData()
 
         if not self.test_connection():
-            logger.error("Не удалось подключиться к базе данных после нескольких попыток.")
+            logger.error(
+                "Не удалось подключиться к базе данных после нескольких попыток.",
+            )
             msg = "Failed to connect to the database."
             raise ConnectionError(msg)
 
@@ -49,8 +60,10 @@ class DatabaseManager:
     def create_table(self, table_name: str, columns: dict[str, str]) -> None:
         self.drop_table_if_exists(table_name)
 
-        table_columns = (Column(column_name, type_mapping[column_type.lower()]) for column_name, column_type in
-                         columns.items())
+        table_columns = (
+            Column(column_name, type_mapping[column_type.lower()])
+            for column_name, column_type in columns.items()
+        )
         table = Table(
             table_name,
             self.metadata,

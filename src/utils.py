@@ -22,7 +22,10 @@ def generate_csv(file_name: str, num_records: int, data_types: list[DataType]) -
         DataType.date: lambda: pd.Timestamp("today").strftime("%Y-%m-%d"),
     }
     for _ in range(num_records):
-        row = {f"col_{i + 1}": type_map.get(dt, type_map[DataType.str])() for i, dt in enumerate(data_types)}
+        row = {
+            f"col_{i + 1}": type_map.get(dt, type_map[DataType.str])()
+            for i, dt in enumerate(data_types)
+        }
         data.append(row)
 
     df = pd.DataFrame(data)
@@ -53,9 +56,15 @@ def measure_performance(sqlite_manager):
             num_records = args[0].num_records
             data_types = ",".join(args[0].data_types)
 
-            sqlite_manager.insert_result(timestamp, db_image, operation, num_records, data_types,
-                                         execution_time,
-                                         memory_used)
+            sqlite_manager.insert_result(
+                timestamp,
+                db_image,
+                operation,
+                num_records,
+                data_types,
+                execution_time,
+                memory_used,
+            )
 
             logger.info(f"Execution time: {execution_time} seconds")
             logger.info(f"Memory used: {memory_used} MB")

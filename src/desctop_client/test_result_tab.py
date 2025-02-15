@@ -39,13 +39,23 @@ class TestResultsApp(QWidget):
         self.details_table = QTableWidget()
         self.details_table.setColumnCount(7)
         self.details_table.setHorizontalHeaderLabels(
-            ["Timestamp", "DB Image", "Operation", "Num Records", "Data Types", "Exec Time", "Memory"],
+            [
+                "Timestamp",
+                "DB Image",
+                "Operation",
+                "Num Records",
+                "Data Types",
+                "Exec Time",
+                "Memory",
+            ],
         )
         layout.addWidget(self.details_table)
 
         # Комбобокс для выбора типа визуализации
         self.visualization_type = QComboBox()
-        self.visualization_type.addItems(["Время выполнения", "Распределение операций", "Количество записей"])
+        self.visualization_type.addItems(
+            ["Время выполнения", "Распределение операций", "Количество записей"],
+        )
         layout.addWidget(self.visualization_type)
 
         # Кнопки
@@ -79,8 +89,16 @@ class TestResultsApp(QWidget):
             self.details_table.setItem(0, 2, QTableWidgetItem(result.operation))
             self.details_table.setItem(0, 3, QTableWidgetItem(str(result.num_records)))
             self.details_table.setItem(0, 4, QTableWidgetItem(result.data_types))
-            self.details_table.setItem(0, 5, QTableWidgetItem(f"{result.execution_time:.2f}"))
-            self.details_table.setItem(0, 6, QTableWidgetItem(f"{result.memory_used:.2f}"))
+            self.details_table.setItem(
+                0,
+                5,
+                QTableWidgetItem(f"{result.execution_time:.2f}"),
+            )
+            self.details_table.setItem(
+                0,
+                6,
+                QTableWidgetItem(f"{result.memory_used:.2f}"),
+            )
 
     def delete_selected_result(self) -> None:
         selected_item = self.results_list.currentItem()
@@ -89,7 +107,8 @@ class TestResultsApp(QWidget):
             return
 
         reply = QMessageBox.question(
-            self, "Подтверждение",
+            self,
+            "Подтверждение",
             "Вы уверены, что хотите удалить выбранный результат?",
             QMessageBox.Yes | QMessageBox.No,
         )
@@ -135,7 +154,12 @@ class TestResultsApp(QWidget):
         operation_counts = {op: operations.count(op) for op in set(operations)}
 
         plt.figure(figsize=(8, 8))
-        plt.pie(operation_counts.values(), labels=operation_counts.keys(), autopct="%1.1f%%", startangle=140)
+        plt.pie(
+            operation_counts.values(),
+            labels=operation_counts.keys(),
+            autopct="%1.1f%%",
+            startangle=140,
+        )
         plt.title("Распределение операций")
         plt.show()
 

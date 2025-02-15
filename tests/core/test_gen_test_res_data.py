@@ -20,8 +20,14 @@ def test_generate_test_results(num_results: int = 10) -> None:
         operation = random.choice(operations)
         num_records = random.randint(100, 10000)
         data_types = random.choice(data_types_list)
-        execution_time = round(random.uniform(0.1, 5.0), 2)  # Время выполнения в секундах
-        memory_used = round(random.uniform(50.0, 200.0), 2)  # Использованная память в МБ
+        execution_time = round(
+            random.uniform(0.1, 5.0),
+            2,
+        )  # Время выполнения в секундах
+        memory_used = round(
+            random.uniform(50.0, 200.0),
+            2,
+        )  # Использованная память в МБ
 
         # Вставка в базу данных
         sqlite_manager.insert_result(
