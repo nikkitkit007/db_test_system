@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     LogFormat: str = "%(message)s"
     LogFileSizeMB: int = 50
     LogFileCount: int = 50
+    LOG_FILE_PATH: str = "./log.txt"
 
     SQLITE_DB_PATH: str = "test_results.db"
     SQLITE_DB_URL: str = f"sqlite:///{SQLITE_DB_PATH}"

@@ -27,7 +27,7 @@ def setup_logging() -> None:
     logging.basicConfig(level=settings.LogLevel, format=settings.LogFormat)
 
     handler = RotatingFileHandler(
-        "log.log",
+        settings.LOG_FILE_PATH,
         maxBytes=settings.LogFileSizeMB * 1024 * 1024,
         backupCount=settings.LogFileCount,
     )
