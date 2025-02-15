@@ -22,6 +22,56 @@ from src.utils import clear_container_name, generate_csv, load_csv_to_db, measur
 
 logger = get_logger(__name__)
 
+DB_CONFIGS = {
+    # PostgreSQL официальные образы, например "postgres:latest"
+    "postgres": {
+        "db_type": "postgresql",
+        "default_user": "postgres",
+        "default_password": "password",
+        "default_port": 5432,
+        "default_db": "test_db",
+        # Зависит от того, как у вас в Dockerfile/образе обозначены переменные
+        "env": {
+            "POSTGRES_USER": "postgres",
+            "POSTGRES_PASSWORD": "password",
+            "POSTGRES_DB": "test_db",
+        },
+    },
+    # MySQL официальные образы, например "mysql:latest"
+    "mysql": {
+        "db_type": "mysql",
+        "default_user": "root",
+        "default_password": "password",
+        "default_port": 3306,
+        "default_db": "test_db",
+        "env": {
+            "MYSQL_ROOT_PASSWORD": "password",
+            "MYSQL_DATABASE": "test_db",
+        },
+    },
+    # Пример для MongoDB — если захотите добавить NoSQL
+    "mongo": {
+        "db_type": "mongodb",
+        "default_user": "root",
+        "default_password": "password",
+        "default_port": 27017,
+        "default_db": "admin",
+        "env": {
+            "MONGO_INITDB_ROOT_USERNAME": "root",
+            "MONGO_INITDB_ROOT_PASSWORD": "password",
+        },
+    },
+    # Можно завести "по умолчанию" или "user_defined" для прочих случаев
+    "default": {
+        "db_type": "postgresql",
+        "default_user": "user",
+        "default_password": "password",
+        "default_port": 5432,
+        "default_db": "test_db",
+        "env": {},
+    },
+}
+
 
 class ConfigApp(QWidget):
     test_completed = pyqtSignal()  # Сигнал для обновления результатов
@@ -183,15 +233,29 @@ class ConfigApp(QWidget):
 
     def setup_docker_and_test(self) -> None:
         self.docker_manager.pull_image(self.db_image)
+
+        base_image_name = self.db_image.split(":")[0].lower()
+        config = DB_CONFIGS.get(base_image_name, DB_CONFIGS["default"])
+
         container_name = f"{clear_container_name(self.db_image)}_test"
-        self.docker_manager.run_container(self.db_image, container_name)
-        self.generate_and_test()
-        generate_csv("test_data.csv", self.num_records, self.data_types)
+
+        environment = config.get("env", {})
+        ports = {config["default_port"]: config["default_port"]}
+
+        self.docker_manager.run_container(self.db_image, container_name, environment=environment,
+                                          ports=ports)
+        csv_file = "test_data.csv"
+
+        generate_csv(csv_file, self.num_records, self.data_types)
         db_manager = DatabaseManager(
-            db_type="postgresql", username="user", password="password",
-            host="localhost", port=5432, db_name="test_db",
+            db_type=config["db_type"],
+            username=config["default_user"],
+            password=config["default_password"],
+            host="localhost",
+            port=config["default_port"],
+            db_name=config["default_db"],
         )
-        self.load_test("test_data.csv", db_manager, "test_table")
+        self.load_test(csv_file, db_manager, "test_table")
         self.test_completed.emit()
 
     @measure_performance(sqlite_manager)

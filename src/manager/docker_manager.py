@@ -42,6 +42,7 @@ class DockerManager:
         :param environment: Словарь переменных окружения для контейнера
         :return: Объект контейнера или None в случае ошибки
         """
+        ports = ports or {}
         try:
             self.remove_container_if_exists(container_name)
 
@@ -100,7 +101,7 @@ class DockerManager:
         except DockerException as e:
             logger.info(f"Ошибка при удалении контейнера: {e}")
 
-    def wait_for_container_ready(self, container_name: str, ports: dict, timeout: int = 60) -> bool:
+    def wait_for_container_ready(self, container_name: str, ports: dict, timeout: int = 20) -> bool:
         """
         Ожидание готовности контейнера.
 

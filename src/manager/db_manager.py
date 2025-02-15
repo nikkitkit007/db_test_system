@@ -11,14 +11,22 @@ from src.config.log import get_logger
 logger = get_logger(__name__)
 
 type_mapping = {
-                "int": Integer,
-                "str": String,
-                "date": Date,
-            }
+    "int": Integer,
+    "str": String,
+    "date": Date,
+}
 
 
 class DatabaseManager:
-    def __init__(self, db_type, username, password, host, port, db_name) -> None:
+    def __init__(
+            self,
+            db_type: str,
+            username: str,
+            password: str,
+            host: str,
+            port: int,
+            db_name: str,
+    ) -> None:
         self.db_type = db_type
         self.username = username
         self.password = password
@@ -38,13 +46,16 @@ class DatabaseManager:
         db_url = f"{self.db_type}://{self.username}:{self.password}@{self.host}:{self.port}/{self.db_name}"
         return create_engine(db_url)
 
-    def create_table(self, table_name, columns) -> None:
+    def create_table(self, table_name: str, columns: dict[str, str]) -> None:
         self.drop_table_if_exists(table_name)
 
+        table_columns = (Column(column_name, type_mapping[column_type.lower()]) for column_name, column_type in
+                         columns.items())
         table = Table(
-            table_name, self.metadata,
-            *(Column(column_name, type_mapping[column_type.lower()]) for column_name, column_type in
-              columns.items()),
+            table_name,
+            self.metadata,
+            *table_columns,
+            extend_existing=True,
         )
         table.create(self.engine)
         logger.info(f"Таблица {table_name} создана.")
@@ -57,19 +68,19 @@ class DatabaseManager:
             df.to_sql(table_name, self.engine, if_exists="append", index=False)
             logger.info(f"Данные вставлены в таблицу {table_name}.")
         except SQLAlchemyError as e:
-            logger.info(f"Ошибка при вставке данных: {e}")
+            logger.info(f"Ошибка при вставке данных в {table_name}: {e}")
 
     def execute_query(self, query: str) -> Any:
         """
         Выполняет SQL-запрос.
         """
         result = None
-        with self.engine.connect() as connection:
-            try:
+        try:
+            with self.engine.connect() as connection:
                 result = connection.execute(text(query))
-                logger.info(f"Запрос выполнен: {query}")
-            except SQLAlchemyError as e:
-                logger.info(f"Ошибка при выполнении запроса: {e}")
+            logger.info(f"Запрос выполнен: {query}")
+        except SQLAlchemyError as e:
+            logger.info(f"Ошибка при выполнении запроса: {e}")
 
         return result
 
@@ -77,9 +88,9 @@ class DatabaseManager:
         """
         Удаляет таблицу, если она существует.
         """
-        table = Table(table_name, self.metadata, autoload_with=self.engine)
+        table = Table(table_name, self.metadata)
         try:
-            table.drop(self.engine)
+            table.drop(self.engine, checkfirst=True)
             logger.info(f"Таблица {table_name} удалена.")
         except SQLAlchemyError as e:
             logger.info(f"Ошибка при удалении таблицы: {e}")
@@ -88,15 +99,16 @@ class DatabaseManager:
         """
         Тестирует подключение к базе данных.
         """
+        conn_error = None
         for _attempt in range(retries):
             try:
                 with self.engine.connect() as connection:
                     connection.execute(text("SELECT 1"))
                     logger.info("Подключение к базе данных успешно.")
                     return True
-            except SQLAlchemyError as e:
-                logger.info(f"Ошибка при подключении к базе данных: {e}")
+            except SQLAlchemyError:
                 time.sleep(delay)
+        logger.info(f"Ошибка при подключении к базе данных: {conn_error}")
         return False
 
 
