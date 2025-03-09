@@ -10,6 +10,7 @@ import psutil
 from manager.db_manager import DatabaseManager
 from src.config.log import get_logger
 from src.schemas.enums import DataType
+from src.storage.model import TestResults
 
 logger = get_logger(__name__)
 
@@ -57,13 +58,15 @@ def measure_performance(sqlite_manager):
             data_types = ",".join(args[0].data_types)
 
             sqlite_manager.insert_result(
-                timestamp,
-                db_image,
-                operation,
-                num_records,
-                data_types,
-                execution_time,
-                memory_used,
+                TestResults(
+                    timestamp=timestamp,
+                    db_image=db_image,
+                    operation=operation,
+                    num_records=num_records,
+                    data_types=data_types,
+                    execution_time=execution_time,
+                    memory_used=memory_used,
+                ),
             )
 
             logger.info(f"Execution time: {execution_time} seconds")

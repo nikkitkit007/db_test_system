@@ -18,7 +18,8 @@ from src.config.log import get_logger
 from src.desctop_client.image_config_editor_dialog import ConfigEditorDialog
 from src.manager.db_manager import DatabaseManager
 from src.manager.docker_manager import DockerManager
-from src.storage.test_result_storage import sqlite_manager
+from src.storage.config_storage import config_manager
+from src.storage.result_storage import result_manager
 from src.utils import (
     clear_container_name,
     generate_csv,
@@ -183,7 +184,7 @@ class ConfigApp(QWidget):
         """Загружает образы Docker из базы данных в выпадающий список."""
         try:
             docker_images = (
-                sqlite_manager.get_all_docker_images()
+                config_manager.get_all_docker_images()
             )  # Получаем все образы
             self.db_image_combo.clear()  # Очищаем список
             for image in docker_images:
@@ -202,7 +203,7 @@ class ConfigApp(QWidget):
         if not custom_image:
             QMessageBox.warning(self, "Ошибка", "Имя образа не может быть пустым.")
             return
-        sqlite_manager.add_docker_image(name=custom_image)
+        config_manager.add_docker_image(name=custom_image)
         logger.info(f"Добавлен образ: {custom_image}")
         self.db_image_combo.addItem(custom_image)
         QMessageBox.information(self, "Успех", f"Образ '{custom_image}' добавлен.")
@@ -256,7 +257,7 @@ class ConfigApp(QWidget):
     def setup_docker_and_test(self) -> None:
         self.docker_manager.pull_image(self.db_image)
 
-        config = sqlite_manager.get_db_config(self.db_image)
+        config = config_manager.get_db_config(self.db_image)
 
         container_name = f"{clear_container_name(self.db_image)}_test"
 
@@ -295,7 +296,7 @@ class ConfigApp(QWidget):
 
         # Пытаемся получить текущий config из БД
         try:
-            config_dict = sqlite_manager.get_db_config(selected_image)
+            config_dict = config_manager.get_db_config(selected_image)
         except ValueError:
             # Если конфигурации нет, вернём пустой словарь
             config_dict = {}
@@ -309,13 +310,13 @@ class ConfigApp(QWidget):
         if dialog.exec_():  # Если пользователь нажал "Сохранить"
             new_config = dialog.get_config_dict()
             # Сохраняем в БД
-            sqlite_manager.add_or_update_db_config(selected_image, new_config)
+            config_manager.add_or_update_db_config(selected_image, new_config)
             QMessageBox.information(
                 self,
                 "Успех",
                 f"Конфигурация для {selected_image} обновлена.",
             )
 
-    @measure_performance(sqlite_manager)
+    @measure_performance(result_manager)
     def load_test(self, csv_file, db_manager, table) -> None:
         load_csv_to_db(csv_file, db_manager, table)

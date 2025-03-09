@@ -1,7 +1,9 @@
 import random
 from datetime import datetime
+from secrets import choice, randbelow
 
-from src.storage.test_result_storage import sqlite_manager
+from src.storage.model import TestResults
+from src.storage.result_storage import result_manager
 
 
 def test_generate_test_results(num_results: int = 10) -> None:
@@ -16,10 +18,10 @@ def test_generate_test_results(num_results: int = 10) -> None:
 
     for _ in range(num_results):
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        db_image = random.choice(db_images)
-        operation = random.choice(operations)
-        num_records = random.randint(100, 10000)
-        data_types = random.choice(data_types_list)
+        db_image = choice(db_images)
+        operation = choice(operations)
+        num_records = randbelow(10000)
+        data_types = choice(data_types_list)
         execution_time = round(
             random.uniform(0.1, 5.0),
             2,
@@ -30,15 +32,17 @@ def test_generate_test_results(num_results: int = 10) -> None:
         )  # Использованная память в МБ
 
         # Вставка в базу данных
-        sqlite_manager.insert_result(
-            timestamp=timestamp,
-            db_image=db_image,
-            operation=operation,
-            num_records=num_records,
-            data_types=data_types,
-            execution_time=execution_time,
-            memory_used=memory_used,
+        result_manager.insert_result(
+            TestResults(
+                timestamp=timestamp,
+                db_image=db_image,
+                operation=operation,
+                num_records=num_records,
+                data_types=data_types,
+                execution_time=execution_time,
+                memory_used=memory_used,
+            ),
         )
 
-    test_results = sqlite_manager.select_all_results()
+    test_results = result_manager.select_all_results()
     assert len(test_results) == num_results

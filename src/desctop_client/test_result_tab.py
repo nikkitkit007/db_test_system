@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from src.storage.test_result_storage import sqlite_manager
+from src.storage.result_storage import result_manager
 
 
 class TestResultsApp(QWidget):
@@ -72,14 +72,14 @@ class TestResultsApp(QWidget):
     def load_results(self) -> None:
         """Загружает результаты тестов и отображает их в списке."""
         self.results_list.clear()
-        results = sqlite_manager.select_all_results()
+        results = result_manager.select_all_results()
         for result in results:
             self.results_list.addItem(f"ID: {result.id}, Timestamp: {result.timestamp}")
 
     def display_result_details(self, item) -> None:
         """Отображает детали выбранного результата теста"""
         result_id = int(item.text().split(",")[0].split(":")[1].strip())
-        result = sqlite_manager.select_result_by_id(result_id)
+        result = result_manager.select_result_by_id(result_id)
 
         self.details_table.setRowCount(0)
         if result:
@@ -115,12 +115,12 @@ class TestResultsApp(QWidget):
 
         if reply == QMessageBox.Yes:
             result_id = int(selected_item.text().split(",")[0].split(":")[1].strip())
-            sqlite_manager.delete_result(result_id)
+            result_manager.delete_result(result_id)
             self.load_results()
 
     def visualize_results(self) -> None:
         """Визуализирует данные на основе выбранного типа визуализации"""
-        results = sqlite_manager.select_all_results()
+        results = result_manager.select_all_results()
         if not results:
             QMessageBox.warning(self, "Ошибка", "Нет данных для визуализации.")
             return
