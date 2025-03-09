@@ -1,5 +1,7 @@
+import os
+
 from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtWidgets import (
     QComboBox,
     QGridLayout,
@@ -14,6 +16,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
+from src.config.config import settings
 from src.config.log import get_logger
 from src.desctop_client.image_config_editor_dialog import ConfigEditorDialog
 from src.manager.db_manager import DatabaseManager
@@ -78,6 +81,8 @@ logger = get_logger(__name__)
 #         "env": {},
 #     },
 # }
+
+test_config_icon = QIcon(os.path.join(settings.ICONS_PATH, "test_config_icon.svg"))
 
 
 class ConfigApp(QWidget):

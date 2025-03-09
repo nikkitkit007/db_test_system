@@ -1,5 +1,7 @@
+import os
+
 import matplotlib.pyplot as plt
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtWidgets import (
     QComboBox,
     QLabel,
@@ -12,7 +14,10 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
+from src.config.config import settings
 from src.storage.result_storage import result_manager
+
+results_icon = QIcon(os.path.join(settings.ICONS_PATH, "results_icon.svg"))
 
 
 class TestResultsApp(QWidget):
