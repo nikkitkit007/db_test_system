@@ -2,7 +2,6 @@ import random
 import re
 import string
 import time
-from functools import wraps
 
 import pandas as pd
 import psutil
@@ -10,7 +9,6 @@ import psutil
 from manager.db_manager import DatabaseManager
 from src.config.log import get_logger
 from src.schemas.enums import DataType
-from src.storage.model import TestResults
 
 logger = get_logger(__name__)
 
@@ -33,50 +31,6 @@ def generate_csv(file_name: str, num_records: int, data_types: list[DataType]) -
     df.to_csv(file_name, index=False)
 
     logger.info(f"CSV file {file_name} with {num_records} records generated.")
-
-
-def measure_performance(sqlite_manager):
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            process = psutil.Process()
-            memory_before = process.memory_info().rss
-
-            start_time = time.perf_counter()
-            result = func(*args, **kwargs)
-            end_time = time.perf_counter()
-
-            memory_after = process.memory_info().rss
-
-            execution_time = round(end_time - start_time, 5)
-            memory_used = round((memory_after - memory_before) / 1024 / 1024, 5)
-
-            timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-            db_image = args[0].db_image
-            operation = args[0].operation
-            num_records = args[0].num_records
-            data_types = ",".join(args[0].data_types)
-
-            sqlite_manager.insert_result(
-                TestResults(
-                    timestamp=timestamp,
-                    db_image=db_image,
-                    operation=operation,
-                    num_records=num_records,
-                    data_types=data_types,
-                    execution_time=execution_time,
-                    memory_used=memory_used,
-                ),
-            )
-
-            logger.info(f"Execution time: {execution_time} seconds")
-            logger.info(f"Memory used: {memory_used} MB")
-
-            return result
-
-        return wrapper
-
-    return decorator
 
 
 def load_csv_to_db(csv_file: str, db_manager: DatabaseManager, table_name: str) -> None:

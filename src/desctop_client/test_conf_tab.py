@@ -1,6 +1,6 @@
 import os
 
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import QObject, QThread, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtWidgets import (
     QComboBox,
@@ -18,17 +18,10 @@ from PyQt5.QtWidgets import (
 
 from src.config.config import settings
 from src.config.log import get_logger
+from src.core.docker_test import run_test
 from src.desctop_client.image_config_editor_dialog import ConfigEditorDialog
-from src.manager.db_manager import DatabaseManager
-from src.manager.docker_manager import DockerManager
+from src.schemas.test_init import DbTestConf, DbTestDataConf
 from src.storage.config_storage import config_manager
-from src.storage.result_storage import result_manager
-from src.utils import (
-    clear_container_name,
-    generate_csv,
-    load_csv_to_db,
-    measure_performance,
-)
 
 logger = get_logger(__name__)
 
@@ -85,12 +78,48 @@ logger = get_logger(__name__)
 test_config_icon = QIcon(os.path.join(settings.ICONS_PATH, "test_config_icon.svg"))
 
 
+class DockerTestWorker(QObject):
+    finished = pyqtSignal()
+    # Можно добавить дополнительные сигналы для прогресса, ошибок и т.д.
+
+    def __init__(
+        self,
+        db_image,
+        num_records,
+        data_types,
+        operation,
+        parent=None,
+    ) -> None:
+        super().__init__(parent)
+        self.db_image = db_image
+        self.num_records = num_records
+        self.data_types = data_types
+        self.operation = operation
+
+    @pyqtSlot()
+    def run(self) -> None:
+        try:
+            run_test(
+                DbTestConf(
+                    db_image=self.db_image,
+                    operation=self.operation,
+                    test_data_conf=DbTestDataConf(
+                        data_types=self.data_types,
+                        num_records=self.num_records,
+                    ),
+                ),
+            )
+        except Exception as e:
+            logger.exception("Ошибка в DockerTestWorker: %s", e)
+        finally:
+            self.finished.emit()
+
+
 class ConfigApp(QWidget):
     test_completed = pyqtSignal()  # Сигнал для обновления результатов
 
     def __init__(self) -> None:
         super().__init__()
-        self.docker_manager = DockerManager()
         self.initUI()
         self.reset_parameters()
         self.load_docker_images()
@@ -244,7 +273,9 @@ class ConfigApp(QWidget):
             self.operation = self.operation_combo.currentText()
             self.num_records = self.records_spinbox.value()
             self.data_types = [
-                dt.strip() for dt in self.data_types_edit.text().split(",") or []
+                dt.strip()
+                for dt in self.data_types_edit.text().split(",")
+                if dt.strip()
             ]
 
             if not self.data_types:
@@ -254,39 +285,35 @@ class ConfigApp(QWidget):
             logger.info(
                 f"Запуск теста с образом: {self.db_image}, операция: {self.operation}",
             )
-            self.setup_docker_and_test()
+
+            self.run_test_in_thread()
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Ошибка запуска теста: {e!s}")
             logger.exception(f"Ошибка запуска теста: {e}")
 
-    def setup_docker_and_test(self) -> None:
-        self.docker_manager.pull_image(self.db_image)
-
-        config = config_manager.get_db_config(self.db_image)
-
-        container_name = f"{clear_container_name(self.db_image)}_test"
-
-        environment = config.get("env", {})
-        ports = {config["port"]: config["port"]}
-
-        self.docker_manager.run_container(
-            self.db_image,
-            container_name,
-            environment=environment,
-            ports=ports,
+    def run_test_in_thread(self) -> None:
+        self.thread = QThread()
+        # Создаем экземпляр нового рабочего объекта
+        self.worker = DockerTestWorker(
+            db_image=self.db_image,
+            num_records=self.num_records,
+            data_types=self.data_types,
+            operation=self.operation,
         )
-        csv_file = "test_data.csv"
+        # Перемещаем объект в отдельный поток
+        self.worker.moveToThread(self.thread)
+        # При запуске потока вызываем run() нашего рабочего объекта
+        self.thread.started.connect(self.worker.run)
+        # Когда работа завершена, завершаем поток и очищаем объекты
+        self.worker.finished.connect(self.thread.quit)
+        self.worker.finished.connect(self.worker.deleteLater)
+        self.thread.finished.connect(self.thread.deleteLater)
+        # После завершения теста можно уведомить другие компоненты приложения
+        self.worker.finished.connect(self.on_test_finished)
+        self.thread.start()
 
-        generate_csv(csv_file, self.num_records, self.data_types)
-        db_manager = DatabaseManager(
-            db_type=config["db_type"],
-            username=config["user"],
-            password=config["password"],
-            host="localhost",
-            port=config["port"],
-            db_name=config["db"],
-        )
-        self.load_test(csv_file, db_manager, "test_table")
+    def on_test_finished(self) -> None:
+        # Вызываем сигнал, на который подписаны, например, другие вкладки (TestResultsApp)
         self.test_completed.emit()
 
     def edit_selected_image_config(self) -> None:
@@ -321,7 +348,3 @@ class ConfigApp(QWidget):
                 "Успех",
                 f"Конфигурация для {selected_image} обновлена.",
             )
-
-    @measure_performance(result_manager)
-    def load_test(self, csv_file, db_manager, table) -> None:
-        load_csv_to_db(csv_file, db_manager, table)
