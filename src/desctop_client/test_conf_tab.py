@@ -25,56 +25,6 @@ from src.storage.config_storage import config_manager
 
 logger = get_logger(__name__)
 
-# DB_CONFIGS = {
-#     # PostgreSQL официальные образы, например "postgres:latest"
-#     "postgres": {
-#         "db_type": "postgresql",
-#         "default_user": "postgres",
-#         "default_password": "password",
-#         "default_port": 5432,
-#         "default_db": "test_db",
-#         # Зависит от того, как у вас в Dockerfile/образе обозначены переменные
-#         "env": {
-#             "POSTGRES_USER": "postgres",
-#             "POSTGRES_PASSWORD": "password",
-#             "POSTGRES_DB": "test_db",
-#         },
-#     },
-#     # MySQL официальные образы, например "mysql:latest"
-#     "mysql": {
-#         "db_type": "mysql",
-#         "default_user": "root",
-#         "default_password": "password",
-#         "default_port": 3306,
-#         "default_db": "test_db",
-#         "env": {
-#             "MYSQL_ROOT_PASSWORD": "password",
-#             "MYSQL_DATABASE": "test_db",
-#         },
-#     },
-#     # Пример для MongoDB — если захотите добавить NoSQL
-#     "mongo": {
-#         "db_type": "mongodb",
-#         "default_user": "root",
-#         "default_password": "password",
-#         "default_port": 27017,
-#         "default_db": "admin",
-#         "env": {
-#             "MONGO_INITDB_ROOT_USERNAME": "root",
-#             "MONGO_INITDB_ROOT_PASSWORD": "password",
-#         },
-#     },
-#     # Можно завести "по умолчанию" или "user_defined" для прочих случаев
-#     "default": {
-#         "db_type": "postgresql",
-#         "default_user": "user",
-#         "default_password": "password",
-#         "default_port": 5432,
-#         "default_db": "test_db",
-#         "env": {},
-#     },
-# }
-
 test_config_icon = QIcon(os.path.join(settings.ICONS_PATH, "test_config_icon.svg"))
 
 
