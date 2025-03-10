@@ -37,11 +37,6 @@ def run_test(db_test_conf: DbTestConf) -> None:
         environment=environment,
         ports=ports,
     )
-
-    # Генерируем тестовые данные и загружаем их в БД
-    csv_file = "test_data.csv"
-    test_data_conf = db_test_conf.test_data_conf
-    generate_csv(csv_file, test_data_conf.num_records, test_data_conf.data_types)
     db_manager = DatabaseManager(
         db_type=config["db_type"],
         username=config["user"],
@@ -50,16 +45,24 @@ def run_test(db_test_conf: DbTestConf) -> None:
         port=config["port"],
         db_name=config["db"],
     )
-    load_test(db_test_conf, csv_file, db_manager, "test_table")
+    _prepare_db(db_manager, db_test_conf)
+    _load_test(db_manager, db_test_conf)
 
 
-def load_test(db_test_conf: DbTestConf, csv_file, db_manager, table) -> None:
-    load_csv_to_db(csv_file, db_manager, table)
+def _prepare_db(db_manager: DatabaseManager, db_test_conf: DbTestConf) -> None:
+    # Генерируем тестовые данные и загружаем их в БД
 
+    test_data_conf = db_test_conf.test_data_conf
+    csv_file = generate_csv(test_data_conf.num_records, test_data_conf.data_types)
+    load_csv_to_db(csv_file, db_manager)
+
+
+def _load_test(db_manager: DatabaseManager, db_test_conf: DbTestConf) -> None:
     process = psutil.Process()
     memory_before = process.memory_info().rss
 
     start_time = time.perf_counter()
+    db_manager.execute_query("select * from test_tbl")
     end_time = time.perf_counter()
 
     memory_after = process.memory_info().rss

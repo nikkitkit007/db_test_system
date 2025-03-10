@@ -13,7 +13,9 @@ from src.schemas.enums import DataType
 logger = get_logger(__name__)
 
 
-def generate_csv(file_name: str, num_records: int, data_types: list[DataType]) -> None:
+def generate_csv(
+    num_records: int, data_types: list[DataType], file_name: str | None = None
+) -> str:
     data = []
     type_map = {
         DataType.int: lambda: random.randint(1, 1000),
@@ -28,12 +30,17 @@ def generate_csv(file_name: str, num_records: int, data_types: list[DataType]) -
         data.append(row)
 
     df = pd.DataFrame(data)
+    if not file_name:
+        file_name = "test_data_file.csv"
     df.to_csv(file_name, index=False)
 
     logger.info(f"CSV file {file_name} with {num_records} records generated.")
+    return file_name
 
 
-def load_csv_to_db(csv_file: str, db_manager: DatabaseManager, table_name: str) -> None:
+def load_csv_to_db(
+    csv_file: str, db_manager: DatabaseManager, table_name: str = "test_tbl"
+) -> None:
     """
     Загружает данные из CSV файла в базу данных.
 
@@ -45,23 +52,6 @@ def load_csv_to_db(csv_file: str, db_manager: DatabaseManager, table_name: str) 
     columns = {col: "str" for col in df.columns}  # Используем 'str' для простоты
     db_manager.create_table(table_name, columns)
     db_manager.insert_data(table_name, df)
-
-
-def execute_and_measure(db_manager, query) -> None:
-    process = psutil.Process()
-    memory_before = process.memory_info().rss
-
-    start_time = time.time()
-    db_manager.execute_query(query)  # exec
-    end_time = time.time()
-
-    memory_after = process.memory_info().rss
-
-    execution_time = end_time - start_time
-    memory_used = memory_after - memory_before
-
-    logger.info(f"Execution time: {execution_time} seconds")
-    logger.info(f"Memory used: {memory_used / 1024 / 1024} MB")
 
 
 def clear_container_name(name: str) -> str:
