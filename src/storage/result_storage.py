@@ -27,7 +27,11 @@ class ResultStorage(SQLiteDB):
             else:
                 logger.warning(f"Запись с ID {record_id} не найдена.")
 
-    def select_all_results(self, db_image: str = None, operation: str = None) -> list[TestResults]:
+    def select_all_results(
+        self,
+        db_image: str | None = None,
+        operation: str | None = None,
+    ) -> list[TestResults]:
         """Выбор всех записей из таблицы результатов тестов с опциональными фильтрами."""
         with self.session_scope() as session:
             query = select(TestResults)
@@ -35,8 +39,7 @@ class ResultStorage(SQLiteDB):
                 query = query.where(TestResults.db_image == db_image)
             if operation:
                 query = query.where(TestResults.operation == operation)
-            results = session.scalars(query).all()
-            return results
+            return session.scalars(query).all()
 
     def select_result_by_id(self, id: int):
         """Выбор записи из таблицы результатов тестов по ID"""

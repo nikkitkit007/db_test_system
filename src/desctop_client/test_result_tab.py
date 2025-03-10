@@ -24,6 +24,7 @@ from src.storage.result_storage import result_manager
 
 results_icon = QIcon(os.path.join(settings.ICONS_PATH, "results_icon.svg"))
 
+
 class TestResultsApp(QWidget):
     def __init__(self) -> None:
         super().__init__()
@@ -149,13 +150,20 @@ class TestResultsApp(QWidget):
     # ---------------------------------------------------------------------
     # Методы для загрузки/отображения результатов
     # ---------------------------------------------------------------------
-    def load_results(self, db_image: str = None, operation: str = None) -> None:
+    def load_results(
+        self,
+        db_image: str | None = None,
+        operation: str | None = None,
+    ) -> None:
         """
         Загружает результаты тестов из БД с учётом фильтров и отображает их в списке.
         Если db_image или operation пустые, фильтр не применяется.
         """
         self.results_list.clear()
-        results = result_manager.select_all_results(db_image=db_image, operation=operation)
+        results = result_manager.select_all_results(
+            db_image=db_image,
+            operation=operation,
+        )
         # предполагается, что select_all_results умеет применять фильтры
         for result in results:
             item_text = f"ID: {result.id}, Timestamp: {result.timestamp}"

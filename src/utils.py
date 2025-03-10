@@ -1,10 +1,8 @@
 import random
 import re
 import string
-import time
 
 import pandas as pd
-import psutil
 
 from manager.db_manager import DatabaseManager
 from src.config.log import get_logger
@@ -14,7 +12,9 @@ logger = get_logger(__name__)
 
 
 def generate_csv(
-    num_records: int, data_types: list[DataType], file_name: str | None = None
+    num_records: int,
+    data_types: list[DataType],
+    file_name: str | None = None,
 ) -> str:
     data = []
     type_map = {
@@ -39,7 +39,9 @@ def generate_csv(
 
 
 def load_csv_to_db(
-    csv_file: str, db_manager: DatabaseManager, table_name: str = "test_tbl"
+    csv_file: str,
+    db_manager: DatabaseManager,
+    table_name: str = "test_tbl",
 ) -> None:
     """
     Загружает данные из CSV файла в базу данных.
