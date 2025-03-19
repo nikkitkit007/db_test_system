@@ -76,4 +76,24 @@ QListWidget {
     border: 1px solid #ccc;
     background-color: #ffffff;
 }
+#sidebar {
+            background-color: #2e2e2e;
+        }
+        QTreeWidget {
+            background-color: #2e2e2e;
+            color: white;
+            border: none;
+        }
+        QTreeWidget::item:hover {
+            background-color: #505050;
+        }
+        QToolButton {
+            color: white;
+            background-color: #2e2e2e;
+            border: none;
+            padding: 8px;
+        }
+        QToolButton:hover {
+            background-color: #505050;
+        }
 """

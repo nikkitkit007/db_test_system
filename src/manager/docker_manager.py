@@ -6,7 +6,6 @@ from docker.models.containers import Container
 from docker.models.images import Image
 
 from src.config.log import get_logger
-from src.manager.db_manager import DatabaseManager
 
 logger = get_logger(__name__)
 
@@ -148,57 +147,3 @@ class DockerManager:
         msg = f"Контейнер {container.name} не готов в течение {timeout} секунд."
         logger.error(msg)
         raise TimeoutError(msg)
-
-
-# Пример использования модуля
-if __name__ == "__main__":
-    logger.info("test docker load")
-    db_image = "postgres:latest"
-    db_container_name = "postgres_test"
-    db_name = "test_db"
-    db_user = "user"
-    db_password = "example"
-    db_host = "localhost"
-    db_port = 5432
-
-    manager = DockerManager()
-    # print(manager.list_containers())
-
-    # Загрузка образа PostgreSQL
-    postgres_image = manager.pull_image(db_image)
-
-    # Запуск контейнера PostgreSQL
-    postgres_container = manager.run_container(
-        image_name=db_image,
-        container_name=db_container_name,
-        ports={"5432/tcp": db_port},
-        environment={
-            "POSTGRES_DB": db_name,
-            "POSTGRES_USER": db_user,
-            "POSTGRES_PASSWORD": db_password,
-        },
-    )
-
-    time.sleep(10)  # Небольшая пауза для инициализации контейнера
-
-    # Параметры подключения к базе данных
-    db_manager = DatabaseManager(
-        db_type="postgresql",
-        username=db_user,
-        password=db_password,
-        host=db_host,
-        port=db_port,
-        db_name=db_name,
-    )
-    # Тест подключения
-    if db_manager.test_connection():
-        logger.info("Подключение к базе данных успешно.")
-    else:
-        logger.error("Не удалось подключиться к базе данных.")
-
-    # print(manager.list_containers())
-
-    # Список всех контейнеров
-
-    # Остановка и удаление контейнера
-    # manager.stop_container("postgres_test")

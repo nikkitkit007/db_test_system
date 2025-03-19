@@ -1,4 +1,5 @@
 import json
+from typing import Any
 
 from src.config.config import settings
 from src.config.log import get_logger
@@ -14,7 +15,7 @@ class ConfigStorage(SQLiteDB):
     # Методы для работы с Docker-образами (DockerImage)
     # -------------------------------------------------------------------------
 
-    def add_docker_image(self, name: str) -> int:
+    def add_docker_image(self, name: str) -> DockerImage:
         """Добавляет новый Docker-образ в базу данных."""
         with self.session_scope() as session:
             if session.query(DockerImage).filter(DockerImage.name == name).first():
@@ -24,7 +25,7 @@ class ConfigStorage(SQLiteDB):
             session.add(new_image)
             session.flush()  # Генерирует ID новой записи
             logger.info(f"Добавлен новый образ: {name}")
-            return new_image.id
+            return new_image
 
     def get_all_docker_images(self) -> list[DockerImage]:
         """Возвращает список всех Docker-образов."""
@@ -70,13 +71,8 @@ class ConfigStorage(SQLiteDB):
             image.config = json.dumps(config_dict)
             logger.info(f"Обновлен config у Docker-образа '{name}'.")
 
-    def get_db_config(self, name: str) -> dict:
-        """
-        Возвращает конфигурацию (JSON -> dict) для указанного Docker-образа.
-        :param name: название Docker-образа
-        :return: словарь config
-        """
-        image = self.get_image_by_name(name)
+    def get_db_config(self, db_image_name: str) -> dict[str, Any]:
+        image = self.get_image_by_name(db_image_name)
         return json.loads(image.config) if image.config else {}
 
 

@@ -4,8 +4,8 @@ import string
 
 import pandas as pd
 
-from manager.db_manager import DatabaseManager
 from src.config.log import get_logger
+from src.manager.db.base_adapter import BaseAdapter
 from src.schemas.enums import DataType
 
 logger = get_logger(__name__)
@@ -40,7 +40,7 @@ def generate_csv(
 
 def load_csv_to_db(
     csv_file: str,
-    db_manager: DatabaseManager,
+    db_manager: BaseAdapter,
     table_name: str = "test_tbl",
 ) -> None:
     """

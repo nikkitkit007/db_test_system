@@ -1,9 +1,9 @@
 import os
 
 import matplotlib.pyplot as plt
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont, QIcon
-from PyQt5.QtWidgets import (
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFont
+from PyQt6.QtWidgets import (
     QAbstractItemView,
     QComboBox,
     QGroupBox,
@@ -22,7 +22,7 @@ from PyQt5.QtWidgets import (
 from src.config.config import settings
 from src.storage.result_storage import result_manager
 
-results_icon = QIcon(os.path.join(settings.ICONS_PATH, "results_icon.svg"))
+results_icon = os.path.join(settings.ICONS_PATH, "results_icon.svg")
 
 
 class TestResultsApp(QWidget):
@@ -75,7 +75,9 @@ class TestResultsApp(QWidget):
 
         # Список результатов
         self.results_list = QListWidget()
-        self.results_list.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.results_list.setSelectionMode(
+            QAbstractItemView.SelectionMode.ExtendedSelection,
+        )
         self.results_list.itemClicked.connect(self.display_result_details)
         results_layout.addWidget(self.results_list)
 
@@ -168,7 +170,7 @@ class TestResultsApp(QWidget):
         for result in results:
             item_text = f"ID: {result.id}, Timestamp: {result.timestamp}"
             item = QListWidgetItem(item_text)
-            item.setData(Qt.UserRole, result.id)
+            item.setData(Qt.ItemDataRole.UserRole, result.id)
             self.results_list.addItem(item)
 
         # После перезагрузки списка очистим детали (на случай, если пользователь
@@ -180,7 +182,7 @@ class TestResultsApp(QWidget):
         if not item:
             return
 
-        result_id = item.data(Qt.UserRole)
+        result_id = item.data(Qt.ItemDataRole.UserRole)
         result = result_manager.select_result_by_id(result_id)
 
         self.details_table.setRowCount(0)
@@ -218,7 +220,7 @@ class TestResultsApp(QWidget):
 
         if reply == QMessageBox.Yes:
             for item in selected_items:
-                result_id = item.data(Qt.UserRole)
+                result_id = item.data(Qt.ItemDataRole.UserRole)
                 result_manager.delete_result(result_id)
             self.load_results()  # Перезагружаем без фильтров или с текущими — на ваше усмотрение
             self.details_table.setRowCount(0)

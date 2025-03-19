@@ -2,8 +2,12 @@ structlog~=24.2.0
 docker~=7.1.0
 pandas~=2.2.2
 psycopg2~=2.9.9
-PyQt5~=5.15.10
+PyQt6~=6.8.1
 SQLAlchemy~=2.0.31
 psutil~=5.9.8
 ruff~=0.9.3
 alembic~=1.14.1
+
+redis~=5.2.1
+pydantic~=2.7.4
+matplotlib~=3.10.0
