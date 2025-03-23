@@ -12,9 +12,10 @@ class TestResults(Base):
     db_image = Column(Text, nullable=False)
     operation = Column(Text, nullable=False)
     num_records = Column(Integer, nullable=False)
-    step_description = Column(Text, nullable=False)
+    step_description = Column(Text, nullable=True)
     execution_time = Column(Float, nullable=True)
     memory_used = Column(Float, nullable=True)
+    cpu_percent = Column(Float, nullable=True)
 
 
 class DockerImage(Base):

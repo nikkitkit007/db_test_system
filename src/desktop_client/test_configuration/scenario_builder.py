@@ -12,6 +12,7 @@ from PyQt6.QtWidgets import (
     QLineEdit,
     QListWidget,
     QListWidgetItem,
+    QMessageBox,
     QPushButton,
     QSpinBox,
     QVBoxLayout,
@@ -163,7 +164,6 @@ class ScenarioStepItemWidget(QWidget):
 
     def on_check_changed(self, state) -> None:
         self.step.measure = state == Qt.CheckState.Checked.value
-        # Обновим текст label
         self.label.setText(str(self.step))
 
     def update_contents(self) -> None:
@@ -287,6 +287,13 @@ class ScenarioBuilderWidget(QWidget):
         dialog = CreateTableDialog(self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             table_name, columns = dialog.get_data()
+            if not columns:
+                QMessageBox.warning(
+                    self,
+                    "Предупреждение",
+                    f"Добавьте атрибуты таблицы <{table_name}>!",
+                )
+                return
             step = CreateTableStep(table_name, columns, measure=False)
             self.steps.append(step)
             self.add_step_to_list(step)
@@ -295,10 +302,19 @@ class ScenarioBuilderWidget(QWidget):
         dialog = InsertDataDialog(self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             table_name, num_records, data_types = dialog.get_data()
+            columns = self._get_columns_from_tbl(table_name)
+            if columns is None:
+                QMessageBox.warning(
+                    self,
+                    "Предупреждение",
+                    f"Сначала нужно создать таблицу <{table_name}>!",
+                )
+                return
+
             step = InsertDataStep(
                 table_name,
                 num_records,
-                columns=self._get_columns_from_tbl(table_name),
+                columns=columns,
                 measure=False,
             )
             self.steps.append(step)
@@ -346,10 +362,9 @@ class ScenarioBuilderWidget(QWidget):
         self.reorder_steps_by_list()
         return self.steps
 
-    def _get_columns_from_tbl(self, table_name: str) -> dict[str, DataType]:
+    def _get_columns_from_tbl(self, table_name: str) -> dict[str, DataType] | None:
         for step in self.steps:
             if step.step_type == StepType.create and step.table_name == table_name:
                 return step.columns
 
-        msg = f"Need to create table {table_name}"
-        raise Exception(msg)
+        return None

@@ -1,4 +1,6 @@
+import threading
 import time
+from dataclasses import dataclass
 
 import docker
 from docker.errors import DockerException, NotFound
@@ -10,10 +12,25 @@ from src.config.log import get_logger
 logger = get_logger(__name__)
 
 
+@dataclass
+class PeakStats:
+    max_mem: int = 0  # максимальное значение memory_stats.usage (байт)
+    max_cpu_percent: float = 0.0  # максимальный CPU% за интервал
+
+    @property
+    def max_mem_mb(self) -> float:
+        """Возвращает max_mem в мегабайтах."""
+        return self.max_mem / 1024 / 1024
+
+
 class DockerManager:
     def __init__(self) -> None:
         self.client = docker.from_env()
         self.container_name = None
+        self.container = None
+        self._stop_event = threading.Event()
+        self._stats_thread: threading.Thread | None = None
+        self._peak_stats = PeakStats()
 
     def pull_image(self, image_name: str) -> Image | None:
         """
@@ -63,6 +80,7 @@ class DockerManager:
             self.wait_for_container_ready(container, ports)
             logger.info(f"Контейнер {container_name} запущен.")
             self.container_name = container_name
+            self.container = container
             return container
         except DockerException as e:
             logger.exception(f"Ошибка при запуске контейнера: {e}")
@@ -104,6 +122,71 @@ class DockerManager:
             logger.info(f"Контейнер {container_name} не найден. Ничего не удалено.")
         except DockerException as e:
             logger.exception(f"Ошибка при удалении контейнера: {e}")
+
+    def get_container_stats(self, start: bool = False) -> PeakStats | None:
+        """
+        Если start=True, запускаем поток для мониторинга.
+        Если start=False, останавливаем поток и возвращаем пиковые значения.
+        """
+        if start:
+            # Сбрасываем старые данные
+            self._peak_stats = PeakStats()
+            self._stop_event.clear()
+
+            self._stats_thread = threading.Thread(
+                target=self._measure_peaks,
+                args=(self._stop_event,),
+                daemon=True,
+            )
+            self._stats_thread.start()
+            return None
+
+        # Останавливаем сбор статистики и ждём поток
+        if self._stats_thread and self._stats_thread.is_alive():
+            self._stop_event.set()
+            self._stats_thread.join()
+        return self._peak_stats
+
+    def _measure_peaks(self, stop_event: threading.Event) -> None:
+        """
+        Слушаем docker stats в режиме stream=True. Отслеживаем максимальное usage и CPU%.
+        """
+        prev_total_usage = None
+        prev_system_usage = None
+
+        for raw in self.container.stats(decode=True, stream=True):
+            # 1. Проверка памяти
+            mem_usage = raw["memory_stats"]["usage"]
+            self._peak_stats.max_mem = max(mem_usage, self._peak_stats.max_mem)
+
+            # 2. Проверка CPU
+            cpu_stats = raw.get("cpu_stats", {})
+            total_usage = cpu_stats.get("cpu_usage", {}).get("total_usage", 0)
+            system_usage = cpu_stats.get("system_cpu_usage", 0)
+            online_cpus = cpu_stats.get(
+                "online_cpus",
+                1,
+            )  # сколько CPU доступно контейнеру
+
+            # Рассчитываем CPU%, если есть предыдущее состояние
+            if (prev_total_usage is not None) and (prev_system_usage is not None):
+                cpu_delta = total_usage - prev_total_usage
+                system_delta = system_usage - prev_system_usage
+                # Если оба дельта > 0, считаем процент
+                if cpu_delta > 0 and system_delta > 0:
+                    cpu_percent = (cpu_delta / system_delta) * online_cpus * 100.0
+                    self._peak_stats.max_cpu_percent = max(
+                        cpu_percent,
+                        self._peak_stats.max_cpu_percent,
+                    )
+
+            # Обновляем «предыдущее» состояние
+            prev_total_usage = total_usage
+            prev_system_usage = system_usage
+
+            # Если попросили остановиться — выходим из цикла
+            if stop_event.is_set():
+                break
 
     @staticmethod
     def _stop_and_remove_container(container: Container) -> None:

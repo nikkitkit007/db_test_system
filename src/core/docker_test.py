@@ -1,7 +1,4 @@
-import os
 import time
-
-import psutil
 
 from src.config.log import get_logger
 from src.desktop_client.test_configuration.scenario_steps import ScenarioStep, StepType
@@ -78,7 +75,7 @@ def run_test(db_test_conf: DbTestConf) -> None:
     adapter.connect()
 
     # 4) Выполняем непосредственно тест (замеряем время, память)
-    _run_scenario_steps(adapter, db_test_conf)
+    _run_scenario_steps(adapter, docker_manager, db_test_conf)
 
     # 5) Останавливаем контейнер (при желании можно оставить на отладку)
     docker_manager.stop_container()
@@ -86,26 +83,17 @@ def run_test(db_test_conf: DbTestConf) -> None:
 
 def _run_scenario_steps(
     adapter: BaseAdapter,
+    docker_manager: DockerManager,
     db_test_conf: DbTestConf,
 ) -> None:
-    process = psutil.Process(os.getpid())
 
     for step in db_test_conf.scenario_steps:
         if step.measure:
-            mem_before = process.memory_info().rss
-            process.cpu_percent(interval=None)
-            start_time = time.perf_counter()
-
-        # Выполнение шага
-        _execute_step(adapter, step)
-
-        if step.measure:
-            end_time = time.perf_counter()
-            mem_after = process.memory_info().rss
-            process.cpu_percent(interval=None)
-
-            execution_time = round(end_time - start_time, 5)
-            memory_used = round((mem_after - mem_before) / 1024 / 1024, 5)
+            docker_manager.get_container_stats(start=True)
+            time_start = time.perf_counter()
+            _execute_step(adapter, step)
+            test_time = time.perf_counter() - time_start
+            stats_on_finish = docker_manager.get_container_stats(start=False)
 
             timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -116,14 +104,13 @@ def _run_scenario_steps(
                     operation=step.step_type.value,
                     num_records=getattr(step, "num_records", 0),
                     step_description=str(step),
-                    execution_time=execution_time,
-                    memory_used=memory_used,
-                    # cpu_percent=cpu_used,
+                    execution_time=test_time,
+                    memory_used=stats_on_finish.max_mem_mb,
+                    cpu_percent=stats_on_finish.max_cpu_percent,
                 ),
             )
-
-            logger.info(f"Execution time: {execution_time} seconds")
-            logger.info(f"Memory used: {memory_used} MB")
+        else:
+            _execute_step(adapter, step)
 
 
 def _execute_step(adapter: BaseAdapter, step: ScenarioStep) -> None:

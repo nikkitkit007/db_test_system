@@ -30,6 +30,7 @@ class RedisAdapter(BaseAdapter):
         """
         Подключаемся к Redis по заданному хосту и порту.
         """
+
         try:
             self.client = redis.Redis(
                 host=self.host,
