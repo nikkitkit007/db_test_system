@@ -24,6 +24,11 @@ from src.desktop_client.test_configuration.scenario_steps import (
     ScenarioStep,
 )
 
+from PyQt6.QtWidgets import (
+    QDialog, QFormLayout, QLineEdit, QDialogButtonBox, QVBoxLayout,
+    QHBoxLayout, QPushButton, QLabel, QWidget, QComboBox
+)
+
 
 class CreateTableDialog(QDialog):
     def __init__(self, parent=None) -> None:
@@ -31,33 +36,66 @@ class CreateTableDialog(QDialog):
         self.setWindowTitle("Create Table Step")
         self.table_name = ""
         self.columns = {}
+        self.column_fields = []  # список для хранения полей колонок
+        self.line_table_name = QLineEdit()
+        self.columns_layout = QVBoxLayout()
+
         self.initUI()
 
     def initUI(self) -> None:
-        layout = QFormLayout()
-        self.line_table_name = QLineEdit()
-        layout.addRow("Имя таблицы:", self.line_table_name)
-        self.line_columns = QLineEdit()
-        self.line_columns.setPlaceholderText("col1:int, col2:str, col3:date")
-        layout.addRow("Колонки (col:type):", self.line_columns)
+        main_layout = QVBoxLayout()
+
+        # Поле ввода имени таблицы
+        form_layout = QFormLayout()
+        form_layout.addRow("Имя таблицы:", self.line_table_name)
+        main_layout.addLayout(form_layout)
+
+        # Область для колонок
+        main_layout.addLayout(self.columns_layout)
+
+        # Кнопка добавления новой колонки
+        add_col_button = QPushButton("➕ Добавить колонку")
+        add_col_button.clicked.connect(self.add_column_field)
+        main_layout.addWidget(add_col_button)
+
+        # Кнопки OK / Cancel
         btnBox = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel,
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
         )
         btnBox.accepted.connect(self.accept)
         btnBox.rejected.connect(self.reject)
-        layout.addWidget(btnBox)
-        self.setLayout(layout)
+        main_layout.addWidget(btnBox)
+
+        self.setLayout(main_layout)
+
+    def add_column_field(self):
+        col_layout = QHBoxLayout()
+
+        col_name_edit = QLineEdit()
+        col_name_edit.setPlaceholderText("Имя колонки")
+
+        col_type_combo = QComboBox()
+        col_type_combo.addItems(["int", "str", "float", "bool", "date"])
+
+        col_layout.addWidget(QLabel("Имя:"))
+        col_layout.addWidget(col_name_edit)
+        col_layout.addWidget(QLabel("Тип:"))
+        col_layout.addWidget(col_type_combo)
+
+        container = QWidget()
+        container.setLayout(col_layout)
+        self.columns_layout.addWidget(container)
+
+        self.column_fields.append((col_name_edit, col_type_combo))
 
     def accept(self) -> None:
         self.table_name = self.line_table_name.text().strip()
-        cols_text = self.line_columns.text().strip()
         self.columns = {}
-        if cols_text:
-            pairs = [pair.strip() for pair in cols_text.split(",")]
-            for p in pairs:
-                if ":" in p:
-                    col, typ = p.split(":", 1)
-                    self.columns[col.strip()] = typ.strip()
+        for name_edit, type_combo in self.column_fields:
+            name = name_edit.text().strip()
+            typ = type_combo.currentText().strip()
+            if name:
+                self.columns[name] = typ
         super().accept()
 
     def get_data(self):
@@ -74,7 +112,6 @@ class InsertDataDialog(QDialog):
 
         self.line_table_name = QLineEdit()
         self.spin_num_records = QSpinBox()
-        self.line_data_types = QLineEdit()
 
         self.initUI()
 
@@ -83,8 +120,7 @@ class InsertDataDialog(QDialog):
         layout.addRow("Имя таблицы:", self.line_table_name)
         self.spin_num_records.setRange(1, 1000000)
         layout.addRow("Количество записей:", self.spin_num_records)
-        self.line_data_types.setPlaceholderText("int, str, date")
-        layout.addRow("Типы данных:", self.line_data_types)
+
         btnBox = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel,
         )
@@ -96,8 +132,6 @@ class InsertDataDialog(QDialog):
     def accept(self) -> None:
         self.table_name = self.line_table_name.text().strip()
         self.num_records = self.spin_num_records.value()
-        types_raw = self.line_data_types.text().split(",")
-        self.data_types = [t.strip() for t in types_raw if t.strip()]
         super().accept()
 
     def get_data(self):
@@ -147,9 +181,12 @@ class ScenarioBuilderWidget(QWidget):
         super().__init__(parent)
         self.steps = []
         self.step_list = QListWidget()
+        self.step_list.itemDoubleClicked.connect(self.edit_step)
+
         self.btn_create_table = QPushButton("Добавить шаг: Создать таблицу")
         self.btn_insert_data = QPushButton("Добавить шаг: Наполнить таблицу")
         self.btn_add_query = QPushButton("Добавить шаг: Запрос")
+
         self.initUI()
 
     def initUI(self) -> None:
@@ -198,6 +235,49 @@ class ScenarioBuilderWidget(QWidget):
             if widget and hasattr(widget, "step"):
                 new_steps.append(widget.step)
         self.steps = new_steps
+
+    def edit_step(self, item: QListWidgetItem):
+        widget = self.step_list.itemWidget(item)
+        if not widget or not hasattr(widget, "step"):
+            return
+
+        step = widget.step
+
+        if isinstance(step, CreateTableStep):
+            dialog = CreateTableDialog(self)
+            dialog.line_table_name.setText(step.table_name)
+            for col, typ in step.columns.items():
+                dialog.add_column_field()
+                name_edit, type_combo = dialog.column_fields[-1]
+                name_edit.setText(col)
+                index = type_combo.findText(typ)
+                if index >= 0:
+                    type_combo.setCurrentIndex(index)
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                table_name, columns = dialog.get_data()
+                step.table_name = table_name
+                step.columns = columns
+
+        elif isinstance(step, InsertDataStep):
+            dialog = InsertDataDialog(self)
+            dialog.line_table_name.setText(step.table_name)
+            dialog.spin_num_records.setValue(step.num_records)
+            # Заполнение data_types при необходимости
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                table_name, num_records, data_types = dialog.get_data()
+                step.table_name = table_name
+                step.num_records = num_records
+                # step.data_types = data_types  # если поле есть
+
+        elif isinstance(step, QueryStep):
+            text, ok = QInputDialog.getMultiLineText(
+                self, "Редактировать SQL-запрос", "Введите SQL-запрос:", step.query
+            )
+            if ok and text.strip():
+                step.query = text.strip()
+
+        # Обновляем UI
+        self.update_step_list()
 
     # -------------------------------------------
     # МЕТОДЫ ДОБАВЛЕНИЯ ШАГОВ

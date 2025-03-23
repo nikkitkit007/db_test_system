@@ -15,6 +15,7 @@ from PyQt6.QtWidgets import (
 )
 
 from src.config.app_styles import style_sheet
+from src.desktop_client.config import PageIndex
 from src.desktop_client.docker_config import DockerImagesPage
 from src.desktop_client.test_conf_tab import (
     ConfigApp,
@@ -102,10 +103,10 @@ class MainApp(QMainWindow):
         self.scenario_builder_page.steps_updated.connect(self.config_app.update_steps)
 
         # # Добавляем страницы в QStackedWidget
-        self.stacked_widget.addWidget(self.config_app)  # index 0
-        self.stacked_widget.addWidget(self.scenario_builder_page)  # index 1
-        self.stacked_widget.addWidget(self.test_results_app)  # index 2
-        self.stacked_widget.addWidget(self.docker_page)  # index 3
+        self.stacked_widget.addWidget(self.config_app)
+        self.stacked_widget.addWidget(self.scenario_builder_page)
+        self.stacked_widget.addWidget(self.test_results_app)
+        self.stacked_widget.addWidget(self.docker_page)
 
         # Собираем всё в общий лейаут
         main_layout.addWidget(self.sidebar)
@@ -120,13 +121,13 @@ class MainApp(QMainWindow):
         """
         if item == self.docker_item:
             # «Образы Docker» (index 3)
-            self.stacked_widget.setCurrentIndex(3)
+            self.stacked_widget.setCurrentIndex(PageIndex.docker_page)
         elif item == self.config_item:
             # «Конфигурации» (index 0)
-            self.stacked_widget.setCurrentIndex(0)
+            self.stacked_widget.setCurrentIndex(PageIndex.config_app)
         elif item == self.results_item:
             # «Результаты» (index 2)
-            self.stacked_widget.setCurrentIndex(2)
+            self.stacked_widget.setCurrentIndex(PageIndex.test_results_app)
         elif item == self.system_item:
             pass  # По клику на «Система» ничего не делаем
         else:

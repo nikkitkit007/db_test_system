@@ -19,6 +19,7 @@ from PyQt6.QtWidgets import (
 
 from src.config.config import settings
 from src.config.log import get_logger
+from src.desktop_client.config import PageIndex
 from src.desktop_client.test_configuration.scenario_builder import ScenarioBuilderWidget
 from src.desktop_client.test_runner import DockerTestWorker
 from src.storage.config_storage import config_manager
@@ -51,7 +52,7 @@ class ScenarioBuilderPage(QWidget):
         """Возвращает пользователя в ConfigApp."""
         if self.stacked_widget is not None:
             self.steps_updated.emit(self.scenario_builder.get_scenario_steps())
-            self.stacked_widget.setCurrentIndex(0)
+            self.stacked_widget.setCurrentIndex(PageIndex.config_app)
 
 
 class ConfigApp(QWidget):
@@ -123,10 +124,10 @@ class ConfigApp(QWidget):
         """
         Переключает отображение на страницу ScenarioBuilderPage.
         """
-        self.stacked_widget.setCurrentIndex(1)  # Индекс страницы ScenarioBuilderPage
+        self.stacked_widget.setCurrentIndex(PageIndex.scenario_builder_page)
 
     def open_docker_config_builder(self) -> None:
-        self.stacked_widget.setCurrentIndex(3)  # Индекс страницы DockerImagesPage?
+        self.stacked_widget.setCurrentIndex(PageIndex.docker_page)
 
     def reset_parameters(self) -> None:
         self.db_image = ""
