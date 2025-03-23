@@ -3,6 +3,7 @@ from typing import Any
 
 import pandas as pd
 from sqlalchemy import (
+    Boolean,
     Column,
     Date,
     Integer,
@@ -17,14 +18,12 @@ from sqlalchemy.orm import sessionmaker
 
 from src.config.log import get_logger
 from src.manager.db.base_adapter import BaseAdapter
+from src.schemas.enums import DataType
+from src.utils import generate_csv
 
 logger = get_logger(__name__)
 
-type_mapping = {
-    "int": Integer,
-    "str": String,
-    "date": Date,
-}
+type_mapping = {"int": Integer, "str": String, "date": Date, "bool": Boolean}
 
 
 class SQLAdapter(BaseAdapter):
@@ -105,13 +104,13 @@ class SQLAdapter(BaseAdapter):
                 logger.info("Подключение к базе данных успешно.")
                 return True
             except SQLAlchemyError as e:
-                logger.warning(f"Ошибка при подключении (попытка {attempt+1}): {e}")
+                logger.warning(f"Ошибка при подключении (попытка {attempt + 1}): {e}")
                 time.sleep(delay)
 
         logger.error(f"Не удалось подключиться к базе за {retries} попыток.")
         return False
 
-    def create_table(self, table_name: str, columns: dict[str, str]) -> None:
+    def create_table(self, table_name: str, columns: dict[str, DataType]) -> None:
         """
         Создаёт таблицу с указанными колонками (dict column_name -> type).
         """
@@ -153,7 +152,12 @@ class SQLAdapter(BaseAdapter):
         except SQLAlchemyError as e:
             logger.exception(f"Ошибка при удалении таблицы {table_name}: {e}")
 
-    def insert_data(self, table_name: str, df: pd.DataFrame) -> None:
+    def insert_data(
+        self,
+        table_name: str,
+        columns: dict[str, DataType],
+        num_records: int,
+    ) -> None:
         """
         Вставляет данные из DataFrame в указанную таблицу (append-режим).
         """
@@ -161,6 +165,8 @@ class SQLAdapter(BaseAdapter):
             msg = "Движок не создан. Сначала вызовите connect()."
             raise ConnectionError(msg)
 
+        csv_file = generate_csv(num_records, columns)
+        df = pd.read_csv(csv_file)
         try:
             df.to_sql(table_name, self.engine, if_exists="append", index=False)
             logger.info(f"Данные вставлены в таблицу {table_name}.")

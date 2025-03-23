@@ -12,7 +12,7 @@ class TestResults(Base):
     db_image = Column(Text, nullable=False)
     operation = Column(Text, nullable=False)
     num_records = Column(Integer, nullable=False)
-    data_types = Column(Text, nullable=False)
+    step_description = Column(Text, nullable=False)
     execution_time = Column(Float, nullable=True)
     memory_used = Column(Float, nullable=True)
 

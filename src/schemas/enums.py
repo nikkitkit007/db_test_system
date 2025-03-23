@@ -16,3 +16,4 @@ class DataType(str, AutoName):
     str = auto()
     int = auto()
     date = auto()
+    bool = auto()

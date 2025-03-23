@@ -21,7 +21,7 @@ from src.config.config import settings
 from src.config.log import get_logger
 from src.desktop_client.config import PageIndex
 from src.desktop_client.test_configuration.scenario_builder import ScenarioBuilderWidget
-from src.desktop_client.test_runner import DockerTestWorker
+from src.desktop_client.test_runner import DockerTestRunner
 from src.storage.config_storage import config_manager
 
 test_config_icon_path = os.path.join(settings.ICONS_PATH, "test_config_icon.svg")
@@ -73,6 +73,10 @@ class ConfigApp(QWidget):
         self.start_button = QPushButton("Запустить тест")
 
         self.stacked_widget = stacked_widget  # Ссылка на QStackedWidget
+
+        self.thread = None
+        self.worker = None
+
         self.initUI()
         self.reset_parameters()
         self.load_docker_images()
@@ -166,17 +170,12 @@ class ConfigApp(QWidget):
             logger.exception(f"Ошибка запуска теста: {e}")
 
     def run_test_in_thread(self) -> None:
-        if (
-            hasattr(self, "thread")
-            and isinstance(self.thread, QThread)
-            and self.thread is not None
-            and self.thread.isRunning()
-        ):
+        if self.thread is not None and self.thread.isRunning():
             QMessageBox.warning(self, "Предупреждение", "Тест уже выполняется!")
             return
 
-        self.thread = QThread()
-        self.worker = DockerTestWorker(
+        self.thread = QThread(self)
+        self.worker = DockerTestRunner(
             db_image=self.db_image,
             scenario_steps=self.steps_from_scenario,
             parent=None,
@@ -193,3 +192,6 @@ class ConfigApp(QWidget):
 
     def on_test_finished(self) -> None:
         self.test_completed.emit()
+        logger.info("🟢 Тест завершён.")
+        self.thread = None
+        self.worker = None

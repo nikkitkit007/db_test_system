@@ -2,6 +2,7 @@ from PyQt6.QtCore import QEvent, Qt
 from PyQt6.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
+    QComboBox,
     QDialog,
     QDialogButtonBox,
     QFormLayout,
@@ -22,12 +23,9 @@ from src.desktop_client.test_configuration.scenario_steps import (
     InsertDataStep,
     QueryStep,
     ScenarioStep,
+    StepType,
 )
-
-from PyQt6.QtWidgets import (
-    QDialog, QFormLayout, QLineEdit, QDialogButtonBox, QVBoxLayout,
-    QHBoxLayout, QPushButton, QLabel, QWidget, QComboBox
-)
+from src.schemas.enums import DataType
 
 
 class CreateTableDialog(QDialog):
@@ -60,7 +58,7 @@ class CreateTableDialog(QDialog):
 
         # Кнопки OK / Cancel
         btnBox = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel,
         )
         btnBox.accepted.connect(self.accept)
         btnBox.rejected.connect(self.reject)
@@ -68,7 +66,7 @@ class CreateTableDialog(QDialog):
 
         self.setLayout(main_layout)
 
-    def add_column_field(self):
+    def add_column_field(self) -> None:
         col_layout = QHBoxLayout()
 
         col_name_edit = QLineEdit()
@@ -164,7 +162,7 @@ class ScenarioStepItemWidget(QWidget):
         self.setLayout(layout)
 
     def on_check_changed(self, state) -> None:
-        self.step.measure = state == Qt.CheckState.Checked
+        self.step.measure = state == Qt.CheckState.Checked.value
         # Обновим текст label
         self.label.setText(str(self.step))
 
@@ -236,14 +234,14 @@ class ScenarioBuilderWidget(QWidget):
                 new_steps.append(widget.step)
         self.steps = new_steps
 
-    def edit_step(self, item: QListWidgetItem):
+    def edit_step(self, item: QListWidgetItem) -> None:
         widget = self.step_list.itemWidget(item)
         if not widget or not hasattr(widget, "step"):
             return
 
         step = widget.step
 
-        if isinstance(step, CreateTableStep):
+        if step.step_type == StepType.create:
             dialog = CreateTableDialog(self)
             dialog.line_table_name.setText(step.table_name)
             for col, typ in step.columns.items():
@@ -258,7 +256,7 @@ class ScenarioBuilderWidget(QWidget):
                 step.table_name = table_name
                 step.columns = columns
 
-        elif isinstance(step, InsertDataStep):
+        elif step.step_type == StepType.insert:
             dialog = InsertDataDialog(self)
             dialog.line_table_name.setText(step.table_name)
             dialog.spin_num_records.setValue(step.num_records)
@@ -269,9 +267,12 @@ class ScenarioBuilderWidget(QWidget):
                 step.num_records = num_records
                 # step.data_types = data_types  # если поле есть
 
-        elif isinstance(step, QueryStep):
+        elif step.step_type == StepType.query:
             text, ok = QInputDialog.getMultiLineText(
-                self, "Редактировать SQL-запрос", "Введите SQL-запрос:", step.query
+                self,
+                "Редактировать SQL-запрос",
+                "Введите SQL-запрос:",
+                step.query,
             )
             if ok and text.strip():
                 step.query = text.strip()
@@ -294,7 +295,12 @@ class ScenarioBuilderWidget(QWidget):
         dialog = InsertDataDialog(self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             table_name, num_records, data_types = dialog.get_data()
-            step = InsertDataStep(table_name, num_records, measure=False)
+            step = InsertDataStep(
+                table_name,
+                num_records,
+                columns=self._get_columns_from_tbl(table_name),
+                measure=False,
+            )
             self.steps.append(step)
             self.add_step_to_list(step)
 
@@ -339,3 +345,11 @@ class ScenarioBuilderWidget(QWidget):
         """
         self.reorder_steps_by_list()
         return self.steps
+
+    def _get_columns_from_tbl(self, table_name: str) -> dict[str, DataType]:
+        for step in self.steps:
+            if step.step_type == StepType.create and step.table_name == table_name:
+                return step.columns
+
+        msg = f"Need to create table {table_name}"
+        raise Exception(msg)

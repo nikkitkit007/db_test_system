@@ -41,14 +41,13 @@ class ResultStorage(SQLiteDB):
                 query = query.where(TestResults.operation == operation)
             return session.scalars(query).all()
 
-    def select_result_by_id(self, id: int):
-        """Выбор записи из таблицы результатов тестов по ID"""
+    def select_result_by_id(self, result_id: int) -> TestResults:
         with self.session_scope() as session:
-            result = session.get(TestResults, id)
+            result = session.get(TestResults, result_id)
             if result:
-                logger.info(f"Запись с ID {id} получена из базы данных.")
+                logger.info(f"Запись с ID {result_id} получена из базы данных.")
             else:
-                logger.warning(f"Запись с ID {id} не найдена.")
+                logger.warning(f"Запись с ID {result_id} не найдена.")
             return result
 
     def get_distinct_db_images(self):

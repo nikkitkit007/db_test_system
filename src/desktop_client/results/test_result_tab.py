@@ -1,6 +1,5 @@
 import os
 
-import matplotlib.pyplot as plt
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
@@ -20,9 +19,10 @@ from PyQt6.QtWidgets import (
 )
 
 from src.config.config import settings
+from src.desktop_client.results.visualizer import TestResultsVisualizer
 from src.storage.result_storage import result_manager
 
-results_icon = os.path.join(settings.ICONS_PATH, "results_icon.svg")
+results_icon_path = os.path.join(settings.ICONS_PATH, "results_icon.svg")
 
 
 class TestResultsApp(QWidget):
@@ -31,6 +31,7 @@ class TestResultsApp(QWidget):
         self.initUI()
         # Загрузим в фильтры уникальные значения db_image и operation
         self.load_filter_values()
+        self.visualizer = TestResultsVisualizer()
         # Сразу загрузим результаты (без фильтров)
         self.load_results()
 
@@ -98,7 +99,7 @@ class TestResultsApp(QWidget):
                 "DB Image",
                 "Operation",
                 "Num Records",
-                "Data Types",
+                "Test info",
                 "Exec Time",
                 "Memory",
             ],
@@ -192,7 +193,7 @@ class TestResultsApp(QWidget):
             self.details_table.setItem(0, 1, QTableWidgetItem(result.db_image))
             self.details_table.setItem(0, 2, QTableWidgetItem(result.operation))
             self.details_table.setItem(0, 3, QTableWidgetItem(str(result.num_records)))
-            self.details_table.setItem(0, 4, QTableWidgetItem(result.data_types))
+            self.details_table.setItem(0, 4, QTableWidgetItem(result.step_description))
             self.details_table.setItem(
                 0,
                 5,
@@ -215,19 +216,16 @@ class TestResultsApp(QWidget):
             self,
             "Подтверждение",
             "Вы уверены, что хотите удалить выбранные результаты?",
-            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
         )
 
-        if reply == QMessageBox.Yes:
+        if reply == QMessageBox.StandardButton.Yes:
             for item in selected_items:
                 result_id = item.data(Qt.ItemDataRole.UserRole)
                 result_manager.delete_result(result_id)
             self.load_results()  # Перезагружаем без фильтров или с текущими — на ваше усмотрение
             self.details_table.setRowCount(0)
 
-    # ---------------------------------------------------------------------
-    # Методы визуализации
-    # ---------------------------------------------------------------------
     def visualize_results(self) -> None:
         """Визуализирует данные на основе выбранного типа визуализации."""
         # Можно брать текущие фильтры, чтобы визуализировать только отфильтрованные результаты
@@ -244,49 +242,8 @@ class TestResultsApp(QWidget):
 
         vis_type = self.visualization_type.currentText()
         if vis_type == "Время выполнения":
-            self.plot_execution_time(results)
+            self.visualizer.plot_execution_time(results)
         elif vis_type == "Распределение операций":
-            self.plot_operation_distribution(results)
+            self.visualizer.plot_operation_distribution(results)
         elif vis_type == "Количество записей":
-            self.plot_record_count_distribution(results)
-
-    def plot_execution_time(self, results) -> None:
-        """График времени выполнения."""
-        timestamps = [result.timestamp for result in results]
-        exec_times = [result.execution_time for result in results]
-
-        plt.figure(figsize=(10, 6))
-        plt.plot(timestamps, exec_times, marker="o", label="Время выполнения")
-        plt.xlabel("Время")
-        plt.ylabel("Время выполнения (секунды)")
-        plt.title("Визуализация времени выполнения")
-        plt.legend()
-        plt.grid(True)
-        plt.show()
-
-    def plot_operation_distribution(self, results) -> None:
-        """Круговая диаграмма распределения операций."""
-        operations = [result.operation for result in results]
-        operation_counts = {op: operations.count(op) for op in set(operations)}
-
-        plt.figure(figsize=(8, 8))
-        plt.pie(
-            operation_counts.values(),
-            labels=operation_counts.keys(),
-            autopct="%1.1f%%",
-            startangle=140,
-        )
-        plt.title("Распределение операций")
-        plt.show()
-
-    def plot_record_count_distribution(self, results) -> None:
-        """Гистограмма количества записей."""
-        num_records = [result.num_records for result in results]
-
-        plt.figure(figsize=(10, 6))
-        plt.hist(num_records, bins=10, color="skyblue", edgecolor="black")
-        plt.xlabel("Количество записей")
-        plt.ylabel("Частота")
-        plt.title("Гистограмма количества записей")
-        plt.grid(axis="y")
-        plt.show()
+            self.visualizer.plot_record_count_distribution(results)

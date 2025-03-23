@@ -6,6 +6,7 @@ import redis
 
 from src.config.log import get_logger
 from src.manager.db.base_adapter import BaseAdapter
+from src.schemas.enums import DataType
 
 logger = get_logger(__name__)
 
@@ -64,7 +65,7 @@ class RedisAdapter(BaseAdapter):
         logger.error(f"Не удалось подключиться к Redis за {retries} попыток.")
         return False
 
-    def create_table(self, table_name: str, columns: dict[str, str]) -> None:
+    def create_table(self, table_name: str, columns: dict[str, DataType]) -> None:
         """
         У Redis нет понятия таблиц, но для демонстрации мы можем:
         1) Создать некий HSET (таблицу) с ключом table_name;

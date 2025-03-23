@@ -17,12 +17,12 @@ from PyQt6.QtWidgets import (
 from src.config.app_styles import style_sheet
 from src.desktop_client.config import PageIndex
 from src.desktop_client.docker_config import DockerImagesPage
+from src.desktop_client.results.test_result_tab import TestResultsApp, results_icon_path
 from src.desktop_client.test_conf_tab import (
     ConfigApp,
     ScenarioBuilderPage,
     test_config_icon_path,
 )
-from src.desktop_client.test_result_tab import TestResultsApp
 
 
 class MainApp(QMainWindow):
@@ -67,7 +67,7 @@ class MainApp(QMainWindow):
 
         # Пункт «Результаты» (топ‐уровень)
         self.results_item = QTreeWidgetItem(self.nav_tree, ["Результаты"])
-        self.results_item.setIcon(0, QIcon(test_config_icon_path))
+        self.results_item.setIcon(0, QIcon(results_icon_path))
 
         # Пункт «Конфигурации» (топ‐уровень)
         self.config_item = QTreeWidgetItem(self.nav_tree, ["Конфигурации"])

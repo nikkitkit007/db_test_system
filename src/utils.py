@@ -1,11 +1,11 @@
 import random
 import re
+import secrets
 import string
 
 import pandas as pd
 
 from src.config.log import get_logger
-from src.manager.db.base_adapter import BaseAdapter
 from src.schemas.enums import DataType
 
 logger = get_logger(__name__)
@@ -13,19 +13,20 @@ logger = get_logger(__name__)
 
 def generate_csv(
     num_records: int,
-    data_types: list[DataType],
+    data_types: dict[str, DataType],
     file_name: str | None = None,
 ) -> str:
     data = []
     type_map = {
-        DataType.int: lambda: random.randint(1, 1000),
+        DataType.int: lambda: secrets.randbelow(10000),
         DataType.str: lambda: "".join(random.choices(string.ascii_letters, k=10)),
         DataType.date: lambda: pd.Timestamp("today").strftime("%Y-%m-%d"),
+        DataType.bool: lambda: secrets.choice([True, False]),
     }
     for _ in range(num_records):
         row = {
-            f"col_{i + 1}": type_map.get(dt, type_map[DataType.str])()
-            for i, dt in enumerate(data_types)
+            col: type_map.get(dt_type, type_map[DataType.str])()
+            for col, dt_type in data_types.items()
         }
         data.append(row)
 
@@ -36,24 +37,6 @@ def generate_csv(
 
     logger.info(f"CSV file {file_name} with {num_records} records generated.")
     return file_name
-
-
-def load_csv_to_db(
-    csv_file: str,
-    db_manager: BaseAdapter,
-    table_name: str = "test_tbl",
-) -> None:
-    """
-    Загружает данные из CSV файла в базу данных.
-
-    :param csv_file: Название CSV файла
-    :param db_manager: Объект DatabaseManager для взаимодействия с базой данных
-    :param table_name: Название таблицы в базе данных
-    """
-    df = pd.read_csv(csv_file)
-    columns = {col: "str" for col in df.columns}  # Используем 'str' для простоты
-    db_manager.create_table(table_name, columns)
-    db_manager.insert_data(table_name, df)
 
 
 def clear_container_name(name: str) -> str:

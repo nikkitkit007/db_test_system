@@ -1,8 +1,7 @@
 from typing import Any
 
-import pandas as pd
-
 from src.config.log import get_logger
+from src.schemas.enums import DataType
 
 logger = get_logger(__name__)
 
@@ -21,7 +20,7 @@ class BaseAdapter:
         """
         raise NotImplementedError
 
-    def create_table(self, table_name: str, columns: dict[str, str]) -> None:
+    def create_table(self, table_name: str, columns: dict[str, DataType]) -> None:
         """
         Создание таблицы или эквивалентной структуры (если NoSQL).
         """
@@ -31,8 +30,12 @@ class BaseAdapter:
         """Удалить таблицу/структуру, если существует."""
         raise NotImplementedError
 
-    def insert_data(self, table_name: str, df: pd.DataFrame) -> None:
-        """Вставка данных из DataFrame."""
+    def insert_data(
+        self,
+        table_name: str,
+        columns: dict[str, DataType],
+        num_records: int,
+    ) -> None:
         raise NotImplementedError
 
     def execute_query(self, query: str) -> Any:

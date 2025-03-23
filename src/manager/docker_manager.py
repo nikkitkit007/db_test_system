@@ -13,6 +13,7 @@ logger = get_logger(__name__)
 class DockerManager:
     def __init__(self) -> None:
         self.client = docker.from_env()
+        self.container_name = None
 
     def pull_image(self, image_name: str) -> Image | None:
         """
@@ -61,23 +62,19 @@ class DockerManager:
             )
             self.wait_for_container_ready(container, ports)
             logger.info(f"Контейнер {container_name} запущен.")
+            self.container_name = container_name
             return container
         except DockerException as e:
             logger.exception(f"Ошибка при запуске контейнера: {e}")
             return None
 
-    def stop_container(self, container_name: str) -> None:
-        """
-        Останавливает и удаляет указанный контейнер.
-
-        :param container_name: Название контейнера.
-        """
+    def stop_container(self) -> None:
         try:
-            container = self.client.containers.get(container_name)
+            container = self.client.containers.get(self.container_name)
             self._stop_and_remove_container(container)
-            logger.info(f"Контейнер {container_name} остановлен и удален.")
+            logger.info(f"Контейнер {self.container_name} остановлен и удален.")
         except NotFound:
-            logger.warning(f"Контейнер {container_name} не найден.")
+            logger.warning(f"Контейнер {self.container_name} не найден.")
         except DockerException as e:
             logger.exception(f"Ошибка при остановке контейнера: {e}")
 

@@ -1,50 +1,85 @@
 style_sheet = """
+/* ================ ОБЩИЙ ФОН MAINWINDOW ================ */
 QMainWindow {
-    background-color: #f9f9f9;
+    background-color: #f2f2f2; /* чуть светлее серый фон */
+    color: #333333;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
 }
 
+/* ================ TAB WIDGET И ТАБЫ ================ */
 QTabWidget::pane {
     border: 1px solid #aaa;
     background-color: #ffffff;
 }
 
 QTabBar::tab {
-    background: #e0e0e0;
+    background: qlineargradient(
+        x1: 0, y1: 0, x2: 0, y2: 1,
+        stop: 0 #e6e6e6,
+        stop: 1 #dcdcdc
+    );
     border: 1px solid #ccc;
     padding: 10px;
-    min-width: 150px;
-    font-family: Arial;
+    min-width: 140px;
     font-size: 14px;
+    margin-right: 1px;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
 }
 
 QTabBar::tab:selected {
-    background: #c0d0ff;
+    background: qlineargradient(
+        x1: 0, y1: 0, x2: 0, y2: 1,
+        stop: 0 #c0d0ff,
+        stop: 1 #b0c0ff
+    );
     font-weight: bold;
     border-bottom: 2px solid #5a7dff;
+    margin-bottom: -1px; /* Подчёркиваем выбранную вкладку */
 }
 
 QTabBar::tab:hover {
     background: #d0e0ff;
 }
 
+/* ================ БАЗОВЫЕ НАСТРОЙКИ ВСЕХ WIDGET-ОВ ================ */
 QWidget {
-    font-family: Arial;
-    font-size: 14px;
     color: #333333;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
 }
 
-QLabel {
-    font-size: 16px;
+/* ================ GROUPBOX (рамка + заголовок) ================ */
+QGroupBox {
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-top: 2ex; /* отступ для заголовка */
+    background-color: #ffffff;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    padding: 0 3px;
+    background-color: transparent;
     font-weight: bold;
+    color: #000000;
+    font-size: 15px;
+}
+
+/* ================ LABEL (заголовки, подписи) ================ */
+QLabel {
+    font-size: 15px;
     color: #000000;
 }
 
+/* ================ PUSH BUTTON ================ */
 QPushButton {
     background-color: #4CAF50;
-    color: white;
-    border: none;
-    padding: 10px;
-    border-radius: 5px;
+    color: #ffffff;
+    border: 1px solid #3e8e41;
+    padding: 8px 12px;
+    border-radius: 4px;
     font-size: 14px;
 }
 
@@ -52,17 +87,27 @@ QPushButton:hover {
     background-color: #45a049;
 }
 
-QLineEdit, QSpinBox, QComboBox {
+QPushButton:pressed {
+    background-color: #3e8e41;
+}
+
+/* ================ LINE EDIT, SPIN BOX, COMBO BOX ================ */
+QLineEdit,
+QSpinBox,
+QComboBox {
     border: 1px solid #ccc;
     border-radius: 3px;
     padding: 5px;
     background-color: #ffffff;
+    selection-background-color: #c0d0ff; /* Цвет выделенного текста */
 }
 
+/* ================ TABLE WIDGET ================ */
 QTableWidget {
     gridline-color: #cccccc;
     border: 1px solid #ccc;
-    background-color: #f9f9f9;
+    background-color: #ffffff;
+    selection-background-color: #c0d0ff;
 }
 
 QTableWidget QHeaderView::section {
@@ -72,28 +117,47 @@ QTableWidget QHeaderView::section {
     font-weight: bold;
 }
 
+/* ================ LIST WIDGET ================ */
 QListWidget {
     border: 1px solid #ccc;
     background-color: #ffffff;
+    selection-background-color: #c0d0ff;
 }
+
+/* ================ SIDEBAR / TREEWIDGET ================ */
 #sidebar {
-            background-color: #2e2e2e;
-        }
-        QTreeWidget {
-            background-color: #2e2e2e;
-            color: white;
-            border: none;
-        }
-        QTreeWidget::item:hover {
-            background-color: #505050;
-        }
-        QToolButton {
-            color: white;
-            background-color: #2e2e2e;
-            border: none;
-            padding: 8px;
-        }
-        QToolButton:hover {
-            background-color: #505050;
-        }
+    background-color: #2e2e2e;
+}
+
+QTreeWidget {
+    background-color: #2e2e2e;
+    color: #ffffff;
+    border: none;
+}
+
+QTreeWidget::item:hover {
+    background-color: #505050;
+}
+
+/* ================ TOOL BUTTON (иконки в sidebar, к примеру) ================ */
+QToolButton {
+    color: white;
+    background-color: #2e2e2e;
+    border: none;
+    padding: 8px;
+    font-size: 14px;
+}
+
+QToolButton:hover {
+    background-color: #505050;
+}
+
+/* ================ TOOLTIP ================ */
+QToolTip {
+    background-color: #fefefe;
+    color: #333333;
+    border: 1px solid #aaaaaa;
+    padding: 4px;
+    font-size: 12px;
+}
 """

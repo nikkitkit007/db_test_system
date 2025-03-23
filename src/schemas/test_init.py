@@ -1,14 +1,10 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
-from src.schemas.enums import DataType
-
-
-class DbTestDataConf(BaseModel):
-    num_records: int
-    data_types: list[DataType]
+from src.desktop_client.test_configuration.scenario_steps import ScenarioStep
 
 
 class DbTestConf(BaseModel):
     db_image: str
-    operation: str
-    test_data_conf: DbTestDataConf
+    scenario_steps: list[ScenarioStep]
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
