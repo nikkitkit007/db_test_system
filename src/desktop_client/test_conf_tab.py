@@ -154,10 +154,9 @@ class ConfigApp(QWidget):
         self.data_types = self.data_types_edit.text()
 
         steps_info = "\n".join([str(step) for step in self.steps_from_scenario])
-        preview = (
-            f"""Образ СУБД: {self.db_image}
+        preview = f"""Образ СУБД: {self.db_image}
 {steps_info}
-""")
+"""
         self.preview_text.setText(preview)
 
     def start_process(self) -> None:

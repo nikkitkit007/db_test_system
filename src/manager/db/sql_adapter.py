@@ -97,7 +97,7 @@ class SQLAdapter(BaseAdapter):
             logger.error("Engine не инициализирован. Сначала вызовите connect()")
             return False
         time.sleep(1)
-        for attempt in range(1, retries+1):
+        for attempt in range(1, retries + 1):
             try:
                 with self.engine.connect() as connection:
                     connection.execute(text("SELECT 1"))

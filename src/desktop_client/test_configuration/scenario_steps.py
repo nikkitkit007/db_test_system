@@ -55,9 +55,7 @@ class InsertDataStep(ScenarioStep):
 
     def __str__(self) -> str:
         measure_flag = "[M]" if self.measure else "[ ]"
-        return (
-            f"{measure_flag} Вставка данных: таблица={self.table_name}, Число записей={self.num_records}, Колонки={self.columns}"
-        )
+        return f"{measure_flag} Вставка данных: таблица={self.table_name}, Число записей={self.num_records}, Колонки={self.columns}"
 
 
 class QueryStep(ScenarioStep):
