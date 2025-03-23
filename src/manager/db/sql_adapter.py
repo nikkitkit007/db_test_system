@@ -6,8 +6,8 @@ from sqlalchemy import (
     Boolean,
     Column,
     Date,
-    Integer,
     Float,
+    Integer,
     MetaData,
     String,
     Table,
@@ -24,7 +24,13 @@ from src.utils import generate_csv
 
 logger = get_logger(__name__)
 
-type_mapping = {"int": Integer, "str": String, "date": Date, "bool": Boolean, "float": Float}
+type_mapping = {
+    "int": Integer,
+    "str": String,
+    "date": Date,
+    "bool": Boolean,
+    "float": Float,
+}
 
 
 class SQLAdapter(BaseAdapter):
