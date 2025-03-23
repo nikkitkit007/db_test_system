@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     DB_DIALECT: str = "postgresql+psycopg"
 
     CSV_FILE_WITH_TEST_DATA: str = "test_data.csv"
-    ICONS_PATH: str = "./resources/icons"
+    ICONS_PATH: str = "./src/resources/icons"
 
     class Config:
         env_file = ".env"
