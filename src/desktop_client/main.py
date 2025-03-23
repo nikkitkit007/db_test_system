@@ -153,7 +153,7 @@ class MainApp(QMainWindow):
             self.sidebar_expanded = True
             self.sidebar.setMinimumWidth(self.expanded_width)
             self.sidebar.setMaximumWidth(self.expanded_width)
-            self.btn_toggle.setText("Collapse")
+            self.btn_toggle.setText("Свернуть")
             self._update_nav_tree_collapsed(collapsed=False)
             self.nav_tree.setHorizontalScrollBarPolicy(
                 Qt.ScrollBarPolicy.ScrollBarAsNeeded,

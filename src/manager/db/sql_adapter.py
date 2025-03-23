@@ -89,7 +89,7 @@ class SQLAdapter(BaseAdapter):
             msg = f"Не удалось подключиться к базе {db_url}."
             raise ConnectionError(msg)
 
-    def test_connection(self, retries: int = 5, delay: int = 2) -> bool:
+    def test_connection(self, retries: int = 6, delay: int = 2) -> bool:
         """
         Тест подключения: делаем несколько попыток выполнить SELECT 1.
         """
@@ -97,14 +97,14 @@ class SQLAdapter(BaseAdapter):
             logger.error("Engine не инициализирован. Сначала вызовите connect()")
             return False
         time.sleep(1)
-        for attempt in range(retries):
+        for attempt in range(1, retries+1):
             try:
                 with self.engine.connect() as connection:
                     connection.execute(text("SELECT 1"))
                 logger.info("Подключение к базе данных успешно.")
                 return True
             except SQLAlchemyError as e:
-                logger.warning(f"Ошибка при подключении (попытка {attempt + 1}): {e}")
+                logger.warning(f"Ошибка при подключении (попытка {attempt}): {e}")
                 time.sleep(delay)
 
         logger.error(f"Не удалось подключиться к базе за {retries} попыток.")

@@ -37,7 +37,7 @@ class CreateTableStep(ScenarioStep):
 
     def __str__(self) -> str:
         measure_flag = "[M]" if self.measure else "[ ]"
-        return f"{measure_flag} CreateTable: {self.table_name} (cols={self.columns})"
+        return f"{measure_flag} Создание таблицы: {self.table_name} (Колонки={self.columns})"
 
 
 class InsertDataStep(ScenarioStep):
@@ -56,9 +56,7 @@ class InsertDataStep(ScenarioStep):
     def __str__(self) -> str:
         measure_flag = "[M]" if self.measure else "[ ]"
         return (
-            f"{measure_flag} InsertData: table={self.table_name}, "
-            f"num_records={self.num_records}, "
-            f"columns={self.columns}"
+            f"{measure_flag} Вставка данных: таблица={self.table_name}, Число записей={self.num_records}, Колонки={self.columns}"
         )
 
 
@@ -69,4 +67,4 @@ class QueryStep(ScenarioStep):
 
     def __str__(self) -> str:
         measure_flag = "[M]" if self.measure else "[ ]"
-        return f"{measure_flag} Query: {self.query}"
+        return f"{measure_flag} Запрос: {self.query}"

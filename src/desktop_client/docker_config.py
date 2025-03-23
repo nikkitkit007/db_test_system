@@ -156,7 +156,7 @@ class DockerImagesPage(QWidget):
             image_name=selected_image_name,
             config_dict=config_dict,
         )
-        if dialog.exec_():  # Если пользователь нажал "Сохранить"
+        if dialog.exec():  # Если пользователь нажал "Сохранить"
             new_config = dialog.get_config_dict()
             config_manager.add_or_update_db_config(selected_image_name, new_config)
             QMessageBox.information(

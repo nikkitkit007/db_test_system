@@ -62,9 +62,9 @@ class ConfigApp(QWidget):
         super().__init__()
         self.db_image_label = QLabel("Выберите образ СУБД:")
         self.db_image_combo = QComboBox()
-        self.operation_combo = QComboBox()  # Добавляем поле выбора операции
-        self.records_spinbox = QSpinBox()  # Поле для количества записей
-        self.data_types_edit = QLineEdit()  # Поле для типов данных
+        self.operation_combo = QComboBox()
+        self.records_spinbox = QSpinBox()
+        self.data_types_edit = QLineEdit()
         self.stacked_widget: QStackedWidget | None = None
 
         self.add_image_button = QPushButton("Добавить новый образ")
@@ -85,6 +85,7 @@ class ConfigApp(QWidget):
 
     def update_steps(self, steps: list) -> None:
         self.steps_from_scenario = steps
+        self.update_preview()
 
     def initUI(self) -> None:
         self.setWindowTitle("Docker Configurator")
@@ -152,16 +153,14 @@ class ConfigApp(QWidget):
         self.num_records = self.records_spinbox.value()
         self.data_types = self.data_types_edit.text()
 
+        steps_info = "\n".join([str(step) for step in self.steps_from_scenario])
         preview = (
-            f"Образ СУБД: {self.db_image}\n"
-            f"Тип операции: {self.operation}\n"
-            f"Количество записей: {self.num_records}\n"
-            f"Типы данных: {self.data_types}"
-        )
+            f"""Образ СУБД: {self.db_image}
+{steps_info}
+""")
         self.preview_text.setText(preview)
 
     def start_process(self) -> None:
-        self.update_preview()
         QMessageBox.information(self, "Информация", "Тест успешно запущен!")
         try:
             self.run_test_in_thread()

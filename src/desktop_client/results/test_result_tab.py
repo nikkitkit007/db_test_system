@@ -49,7 +49,7 @@ class TestResultsApp(QWidget):
         filter_layout = QHBoxLayout()
 
         # Фильтр по db_image
-        self.db_image_label = QLabel("DB Image:")
+        self.db_image_label = QLabel("Docker образ:")
         self.db_image_filter_combo = QComboBox()
         self.db_image_filter_combo.addItem("Все", "")
 
@@ -57,7 +57,7 @@ class TestResultsApp(QWidget):
         filter_layout.addWidget(self.db_image_filter_combo)
 
         # Фильтр по operation
-        self.operation_label = QLabel("Operation:")
+        self.operation_label = QLabel("Операция:")
         self.operation_filter_combo = QComboBox()
         self.operation_filter_combo.addItem("Все", "")
 

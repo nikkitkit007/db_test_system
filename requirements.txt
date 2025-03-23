@@ -11,3 +11,5 @@ alembic~=1.14.1
 redis~=5.2.1
 pydantic~=2.7.4
 matplotlib~=3.10.0
+pymysql
+cryptography

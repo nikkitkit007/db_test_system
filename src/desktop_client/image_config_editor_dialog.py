@@ -33,6 +33,7 @@ class ConfigEditorDialog(QDialog):
 
         # Поля для основных ключей
         self.db_type_edit = QLineEdit(self)
+        self.driver = QLineEdit(self)
         self.user_edit = QLineEdit(self)
         self.password_edit = QLineEdit(self)
         self.port_edit = QLineEdit(self)
@@ -41,6 +42,7 @@ class ConfigEditorDialog(QDialog):
 
         # Заполняем начальными значениями (если есть)
         self.db_type_edit.setText(self.original_config.get("db_type", ""))
+        self.driver.setText(self.original_config.get("driver", ""))
         self.user_edit.setText(self.original_config.get("user", ""))
         self.password_edit.setText(self.original_config.get("password", ""))
         self.port_edit.setText(str(self.original_config.get("port", "")))
@@ -52,6 +54,7 @@ class ConfigEditorDialog(QDialog):
         self.env_edit.setPlainText(env_json_str)
 
         form_layout.addRow("db_type:", self.db_type_edit)
+        form_layout.addRow("driver:", self.driver)
         form_layout.addRow("user:", self.user_edit)
         form_layout.addRow("password:", self.password_edit)
         form_layout.addRow("port:", self.port_edit)
@@ -80,6 +83,7 @@ class ConfigEditorDialog(QDialog):
         иначе выводим сообщение об ошибке.
         """
         db_type_val = self.db_type_edit.text().strip()
+        driver = self.driver.text().strip()
         user_val = self.user_edit.text().strip()
         password_val = self.password_edit.text().strip()
         port_val_str = self.port_edit.text().strip()
@@ -97,7 +101,6 @@ class ConfigEditorDialog(QDialog):
             )
             return
 
-        # Парсим env
         try:
             env_dict = json.loads(env_json_str) if env_json_str else {}
         except json.JSONDecodeError as e:
@@ -107,6 +110,7 @@ class ConfigEditorDialog(QDialog):
         # Собираем словарь
         self.edited_config = {
             "db_type": db_type_val,
+            "driver": driver,
             "user": user_val,
             "password": password_val,
             "port": port_val,
