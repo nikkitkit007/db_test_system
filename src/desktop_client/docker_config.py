@@ -1,4 +1,5 @@
 import json
+import os
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
@@ -16,9 +17,12 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from src.config.config import settings
 from src.desktop_client.image_config_editor_dialog import ConfigEditorDialog
 from src.storage.config_storage import config_manager
 from src.storage.model import DockerImage
+
+docker_image_icon_path = os.path.join(settings.ICONS_PATH, "docker_icon.svg")
 
 
 class DockerImagesPage(QWidget):

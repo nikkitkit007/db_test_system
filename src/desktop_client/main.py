@@ -16,7 +16,7 @@ from PyQt6.QtWidgets import (
 
 from src.config.app_styles import style_sheet
 from src.desktop_client.config import PageIndex
-from src.desktop_client.docker_config import DockerImagesPage
+from src.desktop_client.docker_config import DockerImagesPage, docker_image_icon_path
 from src.desktop_client.results.test_result_tab import TestResultsApp, results_icon_path
 from src.desktop_client.test_conf_tab import (
     ConfigApp,
@@ -63,7 +63,7 @@ class MainApp(QMainWindow):
 
         # Дочерний пункт: «Образы Docker»
         self.docker_item = QTreeWidgetItem(self.system_item, ["Образы Docker"])
-        self.docker_item.setIcon(0, QIcon(test_config_icon_path))
+        self.docker_item.setIcon(0, QIcon(docker_image_icon_path))
 
         # Пункт «Результаты» (топ‐уровень)
         self.results_item = QTreeWidgetItem(self.nav_tree, ["Результаты"])
