@@ -22,6 +22,7 @@ def generate_csv(
         DataType.str: lambda: "".join(random.choices(string.ascii_letters, k=10)),
         DataType.date: lambda: pd.Timestamp("today").strftime("%Y-%m-%d"),
         DataType.bool: lambda: secrets.choice([True, False]),
+        DataType.float: lambda: secrets.randbelow(100000),
     }
     for _ in range(num_records):
         row = {

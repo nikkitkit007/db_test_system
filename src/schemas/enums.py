@@ -15,5 +15,6 @@ class AutoName(enum.Enum):
 class DataType(str, AutoName):
     str = auto()
     int = auto()
+    float = auto()
     date = auto()
     bool = auto()
