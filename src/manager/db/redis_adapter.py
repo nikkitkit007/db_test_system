@@ -5,8 +5,9 @@ import pandas as pd
 import redis
 
 from src.config.log import get_logger
+from src.core.scenario_steps import CreateTableStep, InsertDataStep, QueryStep
 from src.manager.db.base_adapter import BaseAdapter
-from src.schemas.enums import DataType
+from src.utils import generate_csv
 
 logger = get_logger(__name__)
 
@@ -66,7 +67,7 @@ class RedisAdapter(BaseAdapter):
         logger.error(f"Не удалось подключиться к Redis за {retries} попыток.")
         return False
 
-    def create_table(self, table_name: str, columns: dict[str, DataType]) -> None:
+    def create_table(self, create_table_step: CreateTableStep) -> None:
         """
         У Redis нет понятия таблиц, но для демонстрации мы можем:
         1) Создать некий HSET (таблицу) с ключом table_name;
@@ -78,9 +79,11 @@ class RedisAdapter(BaseAdapter):
             msg = "Redis client не создан. Вызовите connect()."
             raise ConnectionError(msg)
 
-        # Например, сохраним в специальном ключе: f"{table_name}:schema"
+        table_name = create_table_step.table_name
         schema_key = f"{table_name}:schema"
-        columns_str = ",".join([f"{col}:{typ}" for col, typ in columns.items()])
+        columns_str = ",".join(
+            [f"{col}:{typ}" for col, typ in create_table_step.columns.items()],
+        )
         try:
             self.client.set(schema_key, columns_str)
             logger.info(
@@ -108,7 +111,10 @@ class RedisAdapter(BaseAdapter):
         # Опционально: если мы храним сами данные в виде (table_name:rowN), то их тоже нужно удалить
         # ...
 
-    def insert_data(self, table_name: str, df: pd.DataFrame) -> None:
+    def insert_data(
+        self,
+        insert_step: InsertDataStep,
+    ) -> None:
         """
         Так как Redis не SQL, сделаем упрощенный пример:
         Каждая строка df станет записью в HSET, ключ: f'{table_name}:rowN'
@@ -117,6 +123,12 @@ class RedisAdapter(BaseAdapter):
             msg = "Redis client не создан. Вызовите connect()."
             raise ConnectionError(msg)
 
+        table_name = insert_step.table_name
+        columns = insert_step.columns
+        num_records = insert_step.num_records
+
+        csv_file = generate_csv(num_records, columns)
+        df = pd.read_csv(csv_file)
         try:
             for idx, row in df.iterrows():
                 key = f"{table_name}:row:{idx}"
@@ -131,7 +143,7 @@ class RedisAdapter(BaseAdapter):
         except redis.RedisError as e:
             logger.exception(f"Ошибка при вставке данных в Redis: {e}")
 
-    def execute_query(self, query: str) -> Any:
+    def execute_query(self, query_step: QueryStep) -> Any:
         """
         В Redis нет SQL-запросов, поэтому либо нужно интерпретировать запросы
         (что сложно), либо предоставлять другой метод для работы.

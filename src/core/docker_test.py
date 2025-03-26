@@ -1,7 +1,7 @@
 import time
 
 from src.config.log import get_logger
-from src.desktop_client.test_configuration.scenario_steps import ScenarioStep, StepType
+from src.core.scenario_steps import ScenarioStep, StepType
 from src.manager.db.base_adapter import BaseAdapter
 from src.manager.db.redis_adapter import RedisAdapter
 from src.manager.db.sql_adapter import SQLAdapter
@@ -115,17 +115,13 @@ def _run_scenario_steps(
 
 def _execute_step(adapter: BaseAdapter, step: ScenarioStep) -> None:
     if step.step_type == StepType.create:
-        adapter.create_table(step.table_name, step.columns)
+        adapter.create_table(step)
 
     elif step.step_type == StepType.insert:
-        adapter.insert_data(
-            step.table_name,
-            step.columns,
-            step.num_records,
-        )
+        adapter.insert_data(step)
 
     elif step.step_type == StepType.query:
-        adapter.execute_query(step.query)
+        adapter.execute_query(step)
 
     else:
         msg = f"Неизвестный шаг: {type(step).__name__}"

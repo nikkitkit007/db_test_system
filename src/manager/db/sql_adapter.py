@@ -18,8 +18,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 
 from src.config.log import get_logger
+from src.core.scenario_steps import CreateTableStep, InsertDataStep, QueryStep
 from src.manager.db.base_adapter import BaseAdapter
-from src.schemas.enums import DataType
 from src.utils import generate_csv
 
 logger = get_logger(__name__)
@@ -117,7 +117,7 @@ class SQLAdapter(BaseAdapter):
         logger.error(f"Не удалось подключиться к базе за {retries} попыток.")
         return False
 
-    def create_table(self, table_name: str, columns: dict[str, DataType]) -> None:
+    def create_table(self, create_table_step: CreateTableStep) -> None:
         """
         Создаёт таблицу с указанными колонками (dict column_name -> type).
         """
@@ -125,11 +125,12 @@ class SQLAdapter(BaseAdapter):
             msg = "Движок не создан. Сначала вызовите connect()."
             raise ConnectionError(msg)
 
+        table_name = create_table_step.table_name
         self.drop_table_if_exists(table_name)
 
         table_columns = (
             Column(column_name, type_mapping[column_type.lower()])
-            for column_name, column_type in columns.items()
+            for column_name, column_type in create_table_step.columns.items()
         )
         table = Table(
             table_name,
@@ -161,9 +162,7 @@ class SQLAdapter(BaseAdapter):
 
     def insert_data(
         self,
-        table_name: str,
-        columns: dict[str, DataType],
-        num_records: int,
+        insert_step: InsertDataStep,
     ) -> None:
         """
         Вставляет данные из DataFrame в указанную таблицу (append-режим).
@@ -171,6 +170,10 @@ class SQLAdapter(BaseAdapter):
         if not self.engine:
             msg = "Движок не создан. Сначала вызовите connect()."
             raise ConnectionError(msg)
+
+        table_name = insert_step.table_name
+        columns = insert_step.columns
+        num_records = insert_step.num_records
 
         csv_file = generate_csv(num_records, columns)
         df = pd.read_csv(csv_file)
@@ -180,7 +183,7 @@ class SQLAdapter(BaseAdapter):
         except SQLAlchemyError as e:
             logger.exception(f"Ошибка при вставке данных в {table_name}: {e}")
 
-    def execute_query(self, query: str) -> Any:
+    def execute_query(self, query_step: QueryStep) -> Any:
         """
         Выполняет SQL-запрос и возвращает результат (CursorResult).
         """
@@ -191,8 +194,8 @@ class SQLAdapter(BaseAdapter):
         result = None
         try:
             with self.engine.connect() as connection:
-                result = connection.execute(text(query))
-            logger.info(f"Запрос выполнен: {query}")
+                result = connection.execute(text(query_step.query))
+            logger.info(f"Запрос выполнен: {query_step.query}")
         except SQLAlchemyError as e:
             logger.exception(f"Ошибка при выполнении запроса: {e}")
 

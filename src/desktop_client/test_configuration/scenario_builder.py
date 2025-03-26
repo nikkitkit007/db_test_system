@@ -19,7 +19,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from src.desktop_client.test_configuration.scenario_steps import (
+from src.core.scenario_steps import (
     CreateTableStep,
     InsertDataStep,
     QueryStep,

@@ -2,7 +2,7 @@ from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 
 from src.config.log import get_logger
 from src.core.docker_test import run_test
-from src.desktop_client.test_configuration.scenario_steps import ScenarioStep
+from src.core.scenario_steps import ScenarioStep
 from src.schemas.test_init import DbTestConf
 
 logger = get_logger(__name__)

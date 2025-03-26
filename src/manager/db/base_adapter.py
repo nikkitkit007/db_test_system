@@ -1,7 +1,7 @@
 from typing import Any
 
 from src.config.log import get_logger
-from src.schemas.enums import DataType
+from src.core.scenario_steps import CreateTableStep, InsertDataStep, QueryStep
 
 logger = get_logger(__name__)
 
@@ -20,7 +20,7 @@ class BaseAdapter:
         """
         raise NotImplementedError
 
-    def create_table(self, table_name: str, columns: dict[str, DataType]) -> None:
+    def create_table(self, create_table_step: CreateTableStep) -> None:
         """
         Создание таблицы или эквивалентной структуры (если NoSQL).
         """
@@ -32,12 +32,10 @@ class BaseAdapter:
 
     def insert_data(
         self,
-        table_name: str,
-        columns: dict[str, DataType],
-        num_records: int,
+        insert_step: InsertDataStep,
     ) -> None:
         raise NotImplementedError
 
-    def execute_query(self, query: str) -> Any:
+    def execute_query(self, query_step: QueryStep) -> Any:
         """Выполнить запрос и вернуть результат (если есть)."""
         raise NotImplementedError
