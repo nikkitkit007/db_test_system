@@ -1,3 +1,4 @@
+from pydantic import BaseModel
 from PyQt6.QtCore import QEvent, Qt
 from PyQt6.QtWidgets import (
     QAbstractItemView,
@@ -27,6 +28,10 @@ from src.core.scenario_steps import (
     StepType,
 )
 from src.schemas.enums import DataType
+
+
+class TableInfo(BaseModel):
+    columns: dict[str, DataType]
 
 
 class CreateTableDialog(QDialog):
@@ -102,22 +107,24 @@ class CreateTableDialog(QDialog):
 
 
 class InsertDataDialog(QDialog):
-    def __init__(self, parent=None) -> None:
+    def __init__(self, table_names: list[str], parent=None) -> None:
         super().__init__(parent)
         self.setWindowTitle("Insert Data Step")
         self.table_name = ""
         self.num_records = 0
         self.data_types = []
 
-        self.line_table_name = QLineEdit()
+        self.combo_table_name = QComboBox()
+        self.combo_table_name.addItems(table_names)
+
         self.spin_num_records = QSpinBox()
+        self.spin_num_records.setRange(1, 10000000)
 
         self.initUI()
 
     def initUI(self) -> None:
         layout = QFormLayout()
-        layout.addRow("Имя таблицы:", self.line_table_name)
-        self.spin_num_records.setRange(1, 1000000)
+        layout.addRow("Имя таблицы:", self.combo_table_name)
         layout.addRow("Количество записей:", self.spin_num_records)
 
         btnBox = QDialogButtonBox(
@@ -129,7 +136,7 @@ class InsertDataDialog(QDialog):
         self.setLayout(layout)
 
     def accept(self) -> None:
-        self.table_name = self.line_table_name.text().strip()
+        self.table_name = self.combo_table_name.currentText().strip()
         self.num_records = self.spin_num_records.value()
         super().accept()
 
@@ -178,6 +185,8 @@ class ScenarioBuilderWidget(QWidget):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.steps = []
+        self.table_infos: dict[str, TableInfo] = {}
+
         self.step_list = QListWidget()
         self.step_list.itemDoubleClicked.connect(self.edit_step)
 
@@ -255,10 +264,12 @@ class ScenarioBuilderWidget(QWidget):
                 table_name, columns = dialog.get_data()
                 step.table_name = table_name
                 step.columns = columns
+            self._update_tables_info()
 
         elif step.step_type == StepType.insert:
-            dialog = InsertDataDialog(self)
-            dialog.line_table_name.setText(step.table_name)
+            table_names = list(self.table_infos.keys())
+            dialog = InsertDataDialog(table_names, self)
+            dialog.combo_table_name.setObjectName(step.table_name)
             dialog.spin_num_records.setValue(step.num_records)
             # Заполнение data_types при необходимости
             if dialog.exec() == QDialog.DialogCode.Accepted:
@@ -297,12 +308,14 @@ class ScenarioBuilderWidget(QWidget):
             step = CreateTableStep(table_name, columns, measure=False)
             self.steps.append(step)
             self.add_step_to_list(step)
+            self._update_tables_info()
 
     def add_insert_data_step(self) -> None:
-        dialog = InsertDataDialog(self)
+        table_names = list(self.table_infos.keys())
+        dialog = InsertDataDialog(table_names, self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             table_name, num_records, data_types = dialog.get_data()
-            columns = self._get_columns_from_tbl(table_name)
+            columns = self.table_infos[table_name].columns
             if columns is None:
                 QMessageBox.warning(
                     self,
@@ -362,9 +375,8 @@ class ScenarioBuilderWidget(QWidget):
         self.reorder_steps_by_list()
         return self.steps
 
-    def _get_columns_from_tbl(self, table_name: str) -> dict[str, DataType] | None:
+    def _update_tables_info(self):
+        self.table_infos = {}
         for step in self.steps:
-            if step.step_type == StepType.create and step.table_name == table_name:
-                return step.columns
-
-        return None
+            if step.step_type == StepType.create:
+                self.table_infos[step.table_name] = TableInfo(columns=step.columns)
