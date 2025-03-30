@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QStackedWidget,
     QVBoxLayout,
-    QWidget,
+    QWidget, QScrollArea, QSplitter,
 )
 
 from src.config.config import settings
@@ -35,27 +35,38 @@ class ScenarioPage(QWidget):
         self.load_scenarios()
 
     def initUI(self) -> None:
-        main_layout = QHBoxLayout(self)
+        # Основной горизонтальный layout с QSplitter для динамического изменения размера
+        splitter = QSplitter(Qt.Orientation.Horizontal)
 
         # Левая часть: список сценариев
         self.scenario_list.itemClicked.connect(self.load_scenario_into_builder)
-        main_layout.addWidget(self.scenario_list, 2)
+        splitter.addWidget(self.scenario_list)
+        splitter.setStretchFactor(0, 1)
 
-        # Правая часть: вертикальный layout с полем для имени, конструктором и кнопкой сохранения
-        right_layout = QVBoxLayout()
+        # Правая часть: вертикальный layout с полем ввода, конструктором и кнопкой
+        right_widget = QWidget()
+        right_layout = QVBoxLayout(right_widget)
 
         # Поле ввода имени сценария (верхняя часть правой панели)
         self.scenario_name_edit.setPlaceholderText("Введите имя сценария...")
         right_layout.addWidget(self.scenario_name_edit)
 
-        # Блок ScenarioBuilderPage (средняя часть)
-        right_layout.addWidget(self.scenario_builder_page, 1)
+        # Оборачиваем ScenarioBuilderPage в QScrollArea,
+        # чтобы он масштабировался и прокручивался при необходимости
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setWidget(self.scenario_builder_page)
+        right_layout.addWidget(scroll_area, 1)  # растяжимый блок
 
         # Кнопка «Сохранить» (нижняя часть)
         self.save_button.clicked.connect(self.save_scenario)
         right_layout.addWidget(self.save_button)
 
-        main_layout.addLayout(right_layout, 3)
+        splitter.addWidget(right_widget)
+        splitter.setStretchFactor(1, 2)
+
+        main_layout = QHBoxLayout(self)
+        main_layout.addWidget(splitter)
         self.setLayout(main_layout)
 
     def load_scenarios(self) -> None:

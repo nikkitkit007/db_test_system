@@ -190,9 +190,9 @@ class ScenarioBuilderWidget(QWidget):
         self.step_list = QListWidget()
         self.step_list.itemDoubleClicked.connect(self.edit_step)
 
-        self.btn_create_table = QPushButton("Добавить шаг: Создать таблицу")
-        self.btn_insert_data = QPushButton("Добавить шаг: Наполнить таблицу")
-        self.btn_add_query = QPushButton("Добавить шаг: Запрос")
+        self.btn_create_table = QPushButton("Создать таблицу")
+        self.btn_insert_data = QPushButton("Наполнить таблицу")
+        self.btn_add_query = QPushButton("Запрос")
 
         self.initUI()
 
