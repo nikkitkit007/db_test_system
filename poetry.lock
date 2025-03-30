@@ -399,6 +399,37 @@ ssh = ["paramiko (>=2.4.3)"]
 websockets = ["websocket-client (>=1.3.0)"]
 
 [[package]]
+name = "firebird-base"
+version = "1.8.0"
+description = "Firebird base modules for Python"
+optional = false
+python-versions = "<4,>=3.8"
+groups = ["main"]
+files = [
+    {file = "firebird_base-1.8.0-py3-none-any.whl", hash = "sha256:1358fea4626b3ba78230eb5655e085399251ee1c281289a912c528246eeeab0b"},
+    {file = "firebird_base-1.8.0.tar.gz", hash = "sha256:3b85952c07d8cce558b7579d08091ef46f7020301f58aa94c1c7f4b516a673c1"},
+]
+
+[package.dependencies]
+protobuf = ">=4.23.4"
+
+[[package]]
+name = "firebird-driver"
+version = "1.10.9"
+description = "Firebird driver for Python"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "firebird_driver-1.10.9-py3-none-any.whl", hash = "sha256:20d3602ce63c45ca35cb97d4c73f5a30eba4e899cd50d72808b77ebaf46fcb9e"},
+    {file = "firebird_driver-1.10.9.tar.gz", hash = "sha256:96f0a47ecb4969db43d178d21c7320e952eeb2282bf10405034979439039ab15"},
+]
+
+[package.dependencies]
+firebird-base = ">=1.8.0"
+python-dateutil = ">=2.8"
+
+[[package]]
 name = "fonttools"
 version = "4.56.0"
 description = "Tools to manipulate font files"
@@ -880,6 +911,50 @@ files = [
 ]
 
 [[package]]
+name = "oracledb"
+version = "3.0.0"
+description = "Python interface to Oracle Database"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "oracledb-3.0.0-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:d4fbe19765c489176558bfa2c5145a4e6e960a80b0a451b3f5af368a835623cd"},
+    {file = "oracledb-3.0.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:dec5489116cda6c742f75263bc04333575412775a39a6fea22a0b37f6f9e7021"},
+    {file = "oracledb-3.0.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:0ca6fd65ed3dbc78ce25930b179e97754779eb5cb35eeb97dff8b5fc4db75746"},
+    {file = "oracledb-3.0.0-cp310-cp310-win32.whl", hash = "sha256:04e3f935aca72efa8108b2ae2d98e0f65b59b00edfe2f83bc9b0261a68cd5205"},
+    {file = "oracledb-3.0.0-cp310-cp310-win_amd64.whl", hash = "sha256:19903b34cee9c434df32b3e7b04ca0b1c7b81e50d1ea172d70eae59716787bb3"},
+    {file = "oracledb-3.0.0-cp311-cp311-macosx_10_9_universal2.whl", hash = "sha256:52daa9141c63dfa75c07d445e9bb7f69f43bfb3c5a173ecc48c798fe50288d26"},
+    {file = "oracledb-3.0.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:af98941789df4c6aaaf4338f5b5f6b7f2c8c3fe6f8d6a9382f177f350868747a"},
+    {file = "oracledb-3.0.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:9812bb48865aaec35d73af54cd1746679f2a8a13cbd1412ab371aba2e39b3943"},
+    {file = "oracledb-3.0.0-cp311-cp311-win32.whl", hash = "sha256:6c27fe0de64f2652e949eb05b3baa94df9b981a4a45fa7f8a991e1afb450c8e2"},
+    {file = "oracledb-3.0.0-cp311-cp311-win_amd64.whl", hash = "sha256:f922709672002f0b40997456f03a95f03e5712a86c61159951c5ce09334325e0"},
+    {file = "oracledb-3.0.0-cp312-cp312-macosx_10_13_universal2.whl", hash = "sha256:acd0e747227dea01bebe627b07e958bf36588a337539f24db629dc3431d3f7eb"},
+    {file = "oracledb-3.0.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:f8b402f77c22af031cd0051aea2472ecd0635c1b452998f511aa08b7350c90a4"},
+    {file = "oracledb-3.0.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:378a27782e9a37918bd07a5a1427a77cb6f777d0a5a8eac9c070d786f50120ef"},
+    {file = "oracledb-3.0.0-cp312-cp312-win32.whl", hash = "sha256:54a28c2cb08316a527cd1467740a63771cc1c1164697c932aa834c0967dc4efc"},
+    {file = "oracledb-3.0.0-cp312-cp312-win_amd64.whl", hash = "sha256:8289bad6d103ce42b140e40576cf0c81633e344d56e2d738b539341eacf65624"},
+    {file = "oracledb-3.0.0-cp313-cp313-macosx_10_13_universal2.whl", hash = "sha256:1dcec2916441492e6d6f03be52f06ee9f4814dece672be49f972219ff18fe2c1"},
+    {file = "oracledb-3.0.0-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:4e5963d72f2bf6f6707649cd490c26fc8cc4314e84dd74a1313ecf1c70c93531"},
+    {file = "oracledb-3.0.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:5da57c328a994985bae5936af7974a5c505cf93178d2e3882d96f3ec8363682b"},
+    {file = "oracledb-3.0.0-cp313-cp313-win32.whl", hash = "sha256:2358ffacf5209b6d9c5aaaf34d9754d491b20a141dc305fe21b6cb1ff23fc12a"},
+    {file = "oracledb-3.0.0-cp313-cp313-win_amd64.whl", hash = "sha256:f6b66fddb9ae440b662ae9b8f1e0f618caaf2c3e44a46bbd1521c3ca11f40b0f"},
+    {file = "oracledb-3.0.0-cp38-cp38-macosx_11_0_universal2.whl", hash = "sha256:a15aebfb07d58b55ced60d95963969aa25d0b9ded0f6b394371ed8702792fb33"},
+    {file = "oracledb-3.0.0-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:e910d1a9d9b19d3ecdd6b14ccdcbd4b79a734b24421d34d41e2687fd9edb6fae"},
+    {file = "oracledb-3.0.0-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:7b3a08b563072d1ef52f4190b80f4ccd15e0cfe4597d06a7d0541ed7f762cd0a"},
+    {file = "oracledb-3.0.0-cp38-cp38-win32.whl", hash = "sha256:1d67379950c62a3b4f0416bdbe193c8f93fee819309a6aebe6243a8525cd70e4"},
+    {file = "oracledb-3.0.0-cp38-cp38-win_amd64.whl", hash = "sha256:9d72cf398ab9ed60b020e3906489c3b87fce442ee2ecd4f47d6910b014e47ef4"},
+    {file = "oracledb-3.0.0-cp39-cp39-macosx_10_9_universal2.whl", hash = "sha256:b5df2724d262e3f459c42d03a3df58fcfb9c5e9a96a18739048ecd01aadc94e5"},
+    {file = "oracledb-3.0.0-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:d5087062e55cca4e7ee699e05f53b56a08386d16c7160637a087475a1132567a"},
+    {file = "oracledb-3.0.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:b6c8bc126a876633ecfcff8e568b3c7711ffe80935eaa5e97d6aed189131d4ad"},
+    {file = "oracledb-3.0.0-cp39-cp39-win32.whl", hash = "sha256:2526ffd052fe2d916e04328d5f1db25d8fd0aea3f2a9f4c60bd578e3d0c76f93"},
+    {file = "oracledb-3.0.0-cp39-cp39-win_amd64.whl", hash = "sha256:3b56e74a92f7e8961c5a10103cb97cbcdeac778230db9c2ec2546fe20e3871ca"},
+    {file = "oracledb-3.0.0.tar.gz", hash = "sha256:64dc86ee5c032febc556798b06e7b000ef6828bb0252084f6addacad3363db85"},
+]
+
+[package.dependencies]
+cryptography = ">=3.2.1"
+
+[[package]]
 name = "packaging"
 version = "24.2"
 description = "Core utilities for Python packages"
@@ -1062,6 +1137,25 @@ mic = ["olefile"]
 tests = ["check-manifest", "coverage (>=7.4.2)", "defusedxml", "markdown2", "olefile", "packaging", "pyroma", "pytest", "pytest-cov", "pytest-timeout", "trove-classifiers (>=2024.10.12)"]
 typing = ["typing-extensions ; python_version < \"3.10\""]
 xmp = ["defusedxml"]
+
+[[package]]
+name = "protobuf"
+version = "6.30.2"
+description = ""
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "protobuf-6.30.2-cp310-abi3-win32.whl", hash = "sha256:b12ef7df7b9329886e66404bef5e9ce6a26b54069d7f7436a0853ccdeb91c103"},
+    {file = "protobuf-6.30.2-cp310-abi3-win_amd64.whl", hash = "sha256:7653c99774f73fe6b9301b87da52af0e69783a2e371e8b599b3e9cb4da4b12b9"},
+    {file = "protobuf-6.30.2-cp39-abi3-macosx_10_9_universal2.whl", hash = "sha256:0eb523c550a66a09a0c20f86dd554afbf4d32b02af34ae53d93268c1f73bc65b"},
+    {file = "protobuf-6.30.2-cp39-abi3-manylinux2014_aarch64.whl", hash = "sha256:50f32cc9fd9cb09c783ebc275611b4f19dfdfb68d1ee55d2f0c7fa040df96815"},
+    {file = "protobuf-6.30.2-cp39-abi3-manylinux2014_x86_64.whl", hash = "sha256:4f6c687ae8efae6cf6093389a596548214467778146b7245e886f35e1485315d"},
+    {file = "protobuf-6.30.2-cp39-cp39-win32.whl", hash = "sha256:524afedc03b31b15586ca7f64d877a98b184f007180ce25183d1a5cb230ee72b"},
+    {file = "protobuf-6.30.2-cp39-cp39-win_amd64.whl", hash = "sha256:acec579c39c88bd8fbbacab1b8052c793efe83a0a5bd99db4a31423a25c0a0e2"},
+    {file = "protobuf-6.30.2-py3-none-any.whl", hash = "sha256:ae86b030e69a98e08c77beab574cbcb9fff6d031d57209f574a5aea1445f4b51"},
+    {file = "protobuf-6.30.2.tar.gz", hash = "sha256:35c859ae076d8c56054c25b59e5e59638d86545ed6e2b6efac6be0b6ea3ba048"},
+]
 
 [[package]]
 name = "psutil"
@@ -1252,6 +1346,53 @@ files = [
 [package.extras]
 ed25519 = ["PyNaCl (>=1.4.0)"]
 rsa = ["cryptography"]
+
+[[package]]
+name = "pyodbc"
+version = "5.2.0"
+description = "DB API module for ODBC"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "pyodbc-5.2.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:eb0850e3e3782f57457feed297e220bb20c3e8fd7550d7a6b6bb96112bd9b6fe"},
+    {file = "pyodbc-5.2.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:0dae0fb86078c87acf135dbe5afd3c7d15d52ab0db5965c44159e84058c3e2fb"},
+    {file = "pyodbc-5.2.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:6493b9c7506ca964b80ad638d0dc82869df7058255d71f04fdd1405e88bcb36b"},
+    {file = "pyodbc-5.2.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e04de873607fb960e71953c164c83e8e5d9291ce0d69e688e54947b254b04902"},
+    {file = "pyodbc-5.2.0-cp310-cp310-win32.whl", hash = "sha256:74135cb10c1dcdbd99fe429c61539c232140e62939fa7c69b0a373cc552e4a08"},
+    {file = "pyodbc-5.2.0-cp310-cp310-win_amd64.whl", hash = "sha256:d287121eeaa562b9ab3d4c52fa77c793dfedd127049273eb882a05d3d67a8ce8"},
+    {file = "pyodbc-5.2.0-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:4627779f0a608b51ce2d2fe6d1d395384e65ca36248bf9dbb6d7cf2c8fda1cab"},
+    {file = "pyodbc-5.2.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:4d997d3b6551273647825c734158ca8a6f682df269f6b3975f2499c01577ddec"},
+    {file = "pyodbc-5.2.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:5102007a8c78dd2fc1c1b6f6147de8cfc020f81013e4b46c33e66aaa7d1bf7b1"},
+    {file = "pyodbc-5.2.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:7e3cbc7075a46c411b531ada557c4aef13d034060a70077717124cabc1717e2d"},
+    {file = "pyodbc-5.2.0-cp311-cp311-win32.whl", hash = "sha256:de1ee7ec2eb326b7be5e2c4ce20d472c5ef1a6eb838d126d1d26779ff5486e49"},
+    {file = "pyodbc-5.2.0-cp311-cp311-win_amd64.whl", hash = "sha256:113f904b9852c12f10c7a3288f5a3563ecdbbefe3ccc829074a9eb8255edcd29"},
+    {file = "pyodbc-5.2.0-cp312-cp312-macosx_10_13_x86_64.whl", hash = "sha256:be43d1ece4f2cf4d430996689d89a1a15aeb3a8da8262527e5ced5aee27e89c3"},
+    {file = "pyodbc-5.2.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:9f7badd0055221a744d76c11440c0856fd2846ed53b6555cf8f0a8893a3e4b03"},
+    {file = "pyodbc-5.2.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:ad633c52f4f4e7691daaa2278d6e6ebb2fe4ae7709e610e22c7dd1a1d620cf8b"},
+    {file = "pyodbc-5.2.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:97d086a8f7a302b74c9c2e77bedf954a603b19168af900d4d3a97322e773df63"},
+    {file = "pyodbc-5.2.0-cp312-cp312-win32.whl", hash = "sha256:0e4412f8e608db2a4be5bcc75f9581f386ed6a427dbcb5eac795049ba6fc205e"},
+    {file = "pyodbc-5.2.0-cp312-cp312-win_amd64.whl", hash = "sha256:b1f5686b142759c5b2bdbeaa0692622c2ebb1f10780eb3c174b85f5607fbcf55"},
+    {file = "pyodbc-5.2.0-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:26844d780045bbc3514d5c2f0d89e7fda7df7db0bd24292eb6902046f5730885"},
+    {file = "pyodbc-5.2.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:26d2d8fd53b71204c755abc53b0379df4e23fd9a40faf211e1cb87e8a32470f0"},
+    {file = "pyodbc-5.2.0-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a27996b6d27e275dfb5fe8a34087ba1cacadfd1439e636874ef675faea5149d9"},
+    {file = "pyodbc-5.2.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:eaf42c4bd323b8fd01f1cd900cca2d09232155f9b8f0b9bcd0be66763588ce64"},
+    {file = "pyodbc-5.2.0-cp313-cp313-win32.whl", hash = "sha256:207f16b7e9bf09c591616429ebf2b47127e879aad21167ac15158910dc9bbcda"},
+    {file = "pyodbc-5.2.0-cp313-cp313-win_amd64.whl", hash = "sha256:96d3127f28c0dacf18da7ae009cd48eac532d3dcc718a334b86a3c65f6a5ef5c"},
+    {file = "pyodbc-5.2.0-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:770e1ac2e7bdf31439bf1d57a1d34ae37d6151216367e8e3f6cdc275006c8bb0"},
+    {file = "pyodbc-5.2.0-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:4fde753fcea625bfaed36edae34c2fba15bf0b5d0ea27474ee038ef47b684d1d"},
+    {file = "pyodbc-5.2.0-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:d57843b9792994f9e73b91667da6452a4f2d7caaa2499598783eb972c4b6eb93"},
+    {file = "pyodbc-5.2.0-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f1f38adc47d36af392475cd4aaae0f35652fdc9e8364bf155810fe1be591336f"},
+    {file = "pyodbc-5.2.0-cp38-cp38-win32.whl", hash = "sha256:dc5342d1d09466f9e76e3979551f9205a01ff0ea78b02d2d889171e8c3c4fb9c"},
+    {file = "pyodbc-5.2.0-cp38-cp38-win_amd64.whl", hash = "sha256:2b5323be83fedc79a6d1e1b96e67bdc368c1d3f1562b8f8184b735acdd749ae9"},
+    {file = "pyodbc-5.2.0-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:9e8f4ee2c523bbe85124540ffad62a3b62ae481f012e390ef93e0602b6302e5e"},
+    {file = "pyodbc-5.2.0-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:057b8ede91b21d9f0ef58210d1ca1aad704e641ca68ac6b02f109d86b61d7402"},
+    {file = "pyodbc-5.2.0-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:5f0ecbc7067467df95c9b8bd38fb2682c4a13a3402d77dccaddf1e145cea8cc0"},
+    {file = "pyodbc-5.2.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:26b7f8324fa01c09fe4843ad8adb0b131299ef263a1fb9e63830c9cd1d5c45e4"},
+    {file = "pyodbc-5.2.0-cp39-cp39-win32.whl", hash = "sha256:600ef6f562f609f5612ffaa8a93827249150aa3030c867937c87b24a1608967e"},
+    {file = "pyodbc-5.2.0-cp39-cp39-win_amd64.whl", hash = "sha256:b77556349746fb90416a48bd114cd7323f7e2559a4b263dada935f9b406ba59b"},
+    {file = "pyodbc-5.2.0.tar.gz", hash = "sha256:de8be39809c8ddeeee26a4b876a6463529cd487a60d1393eb2a93e9bcd44a8f5"},
+]
 
 [[package]]
 name = "pyparsing"
@@ -1567,6 +1708,27 @@ pymysql = ["pymysql"]
 sqlcipher = ["sqlcipher3_binary"]
 
 [[package]]
+name = "sqlalchemy-firebird"
+version = "2.1"
+description = "Firebird for SQLAlchemy"
+optional = false
+python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,>=2.7"
+groups = ["main"]
+files = [
+    {file = "sqlalchemy-firebird-2.1.tar.gz", hash = "sha256:ddb50ab02bbd6c7140947930dd0d4df07520b608881dee8ad022bc994cc8a95d"},
+    {file = "sqlalchemy_firebird-2.1-py3-none-any.whl", hash = "sha256:cd2010ac3c0f2bd425d4d68f259dc4e17c5fa5b32539a7e95196865d95e54317"},
+]
+
+[package.dependencies]
+firebird-driver = {version = "*", markers = "python_version >= \"3.8\""}
+packaging = "*"
+SQLAlchemy = {version = ">=2.0", markers = "python_version >= \"3.8\""}
+
+[package.extras]
+dev = ["black", "build", "flake8", "pytest", "twine"]
+test = ["pytest"]
+
+[[package]]
 name = "structlog"
 version = "24.2.0"
 description = "Structured Logging for Python"
@@ -1629,4 +1791,4 @@ zstd = ["zstandard (>=0.18.0)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "bb005bf7051c5ee5a19be906812f5c41d99714ba03dbd11100db6718bc43c061"
+content-hash = "05e1b8ae7f5fd2f819bec78e878ee9832f63bf2db63826516a4de93753ce1db4"

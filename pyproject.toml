@@ -3,7 +3,7 @@ name = "db-test-system"
 version = "0.1.0"
 description = ""
 authors = [
-    {name = "Nikita",email = ""}
+    {name = "Nikita",email = "nikkitkit07@mail.ru"}
 ]
 readme = "README.md"
 requires-python = ">=3.12"
@@ -22,8 +22,11 @@ alembic = "~1.14.1"
 redis = "~5.2.1"
 pydantic = "~2.7.4"
 matplotlib = "~3.10.0"
-pymysql = "*"
-cryptography = "*"
+pymysql = "^1.1.1"
+cryptography = "^44.0.2"
+oracledb = "^3.0.0"
+pyodbc = "^5.2.0"
+sqlalchemy-firebird = "^2.1"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "~0.9.3"

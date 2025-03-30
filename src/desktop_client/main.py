@@ -23,6 +23,10 @@ from src.desktop_client.test_conf_tab import (
     ScenarioBuilderPage,
     test_config_icon_path,
 )
+from src.desktop_client.test_configuration.scenario_tab import (
+    ScenarioPage,
+    scenario_icon_path,
+)
 
 
 class MainApp(QMainWindow):
@@ -56,6 +60,18 @@ class MainApp(QMainWindow):
         self.nav_tree = QTreeWidget()
         self.nav_tree.setHeaderHidden(True)
 
+        # Пункт «Конфигурации» (топ‐уровень)
+        self.config_item = QTreeWidgetItem(self.nav_tree, ["Конфигурации"])
+        self.config_item.setIcon(0, QIcon(test_config_icon_path))
+
+        # Пункт «Сценарии» (топ‐уровень)
+        self.scenario_item = QTreeWidgetItem(self.nav_tree, ["Сценарии"])
+        self.scenario_item.setIcon(0, QIcon(scenario_icon_path))
+
+        # Пункт «Результаты» (топ‐уровень)
+        self.results_item = QTreeWidgetItem(self.nav_tree, ["Результаты"])
+        self.results_item.setIcon(0, QIcon(results_icon_path))
+
         # Пункт «Система» (топ‐уровень)
         self.system_item = QTreeWidgetItem(self.nav_tree, ["Система"])
         self.system_item.setIcon(0, QIcon(test_config_icon_path))
@@ -64,14 +80,6 @@ class MainApp(QMainWindow):
         # Дочерний пункт: «Образы Docker»
         self.docker_item = QTreeWidgetItem(self.system_item, ["Образы Docker"])
         self.docker_item.setIcon(0, QIcon(docker_image_icon_path))
-
-        # Пункт «Результаты» (топ‐уровень)
-        self.results_item = QTreeWidgetItem(self.nav_tree, ["Результаты"])
-        self.results_item.setIcon(0, QIcon(results_icon_path))
-
-        # Пункт «Конфигурации» (топ‐уровень)
-        self.config_item = QTreeWidgetItem(self.nav_tree, ["Конфигурации"])
-        self.config_item.setIcon(0, QIcon(test_config_icon_path))
 
         # Обработка кликов по элементам
         self.nav_tree.itemClicked.connect(self.on_tree_item_clicked)
@@ -99,14 +107,14 @@ class MainApp(QMainWindow):
         self.scenario_builder_page = ScenarioBuilderPage(self.stacked_widget)
         self.test_results_app = TestResultsApp()
         self.docker_page = DockerImagesPage()
-
-        self.scenario_builder_page.steps_updated.connect(self.config_app.update_steps)
+        self.scenario_page = ScenarioPage()
 
         # # Добавляем страницы в QStackedWidget
         self.stacked_widget.addWidget(self.config_app)
         self.stacked_widget.addWidget(self.scenario_builder_page)
         self.stacked_widget.addWidget(self.test_results_app)
         self.stacked_widget.addWidget(self.docker_page)
+        self.stacked_widget.addWidget(self.scenario_page)
 
         # Собираем всё в общий лейаут
         main_layout.addWidget(self.sidebar)
@@ -128,6 +136,9 @@ class MainApp(QMainWindow):
         elif item == self.results_item:
             # «Результаты» (index 2)
             self.stacked_widget.setCurrentIndex(PageIndex.test_results_app)
+        elif item == self.scenario_item:
+            # «Сценарии» (index 4)
+            self.stacked_widget.setCurrentIndex(PageIndex.scenario_page)
         elif item == self.system_item:
             pass  # По клику на «Система» ничего не делаем
         else:

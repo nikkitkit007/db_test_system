@@ -4,7 +4,7 @@ from typing import Any
 from src.config.config import settings
 from src.config.log import get_logger
 from src.storage.db import SQLiteDB
-from src.storage.model import DockerImage
+from src.storage.model import DockerImage, Scenario
 
 logger = get_logger(__name__)
 
@@ -15,20 +15,15 @@ class ConfigStorage(SQLiteDB):
     # Методы для работы с Docker-образами (DockerImage)
     # -------------------------------------------------------------------------
 
-    def add_docker_image(self, name: str) -> DockerImage:
+    def add_docker_image(self, docker_image: DockerImage) -> DockerImage:
         """Добавляет новый Docker-образ в базу данных."""
         with self.session_scope() as session:
-            if session.query(DockerImage).filter(DockerImage.name == name).first():
-                msg = f"Образ с именем '{name}' уже существует."
-                raise ValueError(msg)
-            new_image = DockerImage(name=name)
-            session.add(new_image)
+            session.add(docker_image)
             session.flush()  # Генерирует ID новой записи
-            logger.info(f"Добавлен новый образ: {name}")
-            return new_image
+            logger.info(f"Добавлен новый образ: {docker_image.name}")
+            return docker_image
 
     def get_all_docker_images(self) -> list[DockerImage]:
-        """Возвращает список всех Docker-образов."""
         with self.session_scope() as session:
             return session.query(DockerImage).all()
 
@@ -42,14 +37,26 @@ class ConfigStorage(SQLiteDB):
             session.delete(image)
             logger.info(f"Удален образ с ID: {image_id}")
 
-    def get_image_by_name(self, name: str):
+    def get_image(self, image_id: int | None = None, name: str | None = None):
         """Возвращает Docker-образ по имени."""
+        if image_id is not None:
+            query_filter = DockerImage.id == image_id
+        elif name is not None:
+            query_filter = DockerImage.name == name
+        else:
+            msg = "Not filters"
+            raise Exception(msg)
+
         with self.session_scope() as session:
-            image = session.query(DockerImage).filter(DockerImage.name == name).first()
+            image = session.query(DockerImage).filter(query_filter).first()
             if not image:
                 msg = f"Образ с именем '{name}' не найден."
                 raise ValueError(msg)
             return image
+
+    # -------------------------------------------------------------------------
+    # Методы для работы с ...
+    # -------------------------------------------------------------------------
 
     def add_or_update_db_config(self, name: str, config_dict: dict) -> None:
         """
@@ -72,8 +79,51 @@ class ConfigStorage(SQLiteDB):
             logger.info(f"Обновлен config у Docker-образа '{name}'.")
 
     def get_db_config(self, db_image_name: str) -> dict[str, Any]:
-        image = self.get_image_by_name(db_image_name)
+        image = self.get_image(name=db_image_name)
         return json.loads(image.config) if image.config else {}
+
+    def get_all_scenarios(self) -> list[Scenario]:
+        with self.session_scope() as session:
+            return session.query(Scenario).all()
+
+    def get_scenario(
+        self,
+        scenario_id: int | None = None,
+        name: str | None = None,
+    ) -> Scenario:
+        if scenario_id is not None:
+            query_filter = Scenario.id == scenario_id
+        elif name is not None:
+            query_filter = Scenario.name == name
+        else:
+            msg = "Not filters"
+            raise Exception(msg)
+
+        with self.session_scope() as session:
+            return session.query(Scenario).filter(query_filter).first()
+
+    def add_scenario(self, scenario: Scenario) -> Scenario:
+        with self.session_scope() as session:
+            session.add(scenario)
+            session.flush()  # Генерирует ID новой записи
+            logger.info(f"Добавлен новый сценарий: {scenario.name}")
+            return scenario
+
+    def update_scenario(self, scenario: Scenario) -> Scenario:
+        with self.session_scope() as session:
+            updated_scenario = session.merge(scenario)
+            session.flush()
+            logger.info(f"Обновлен {updated_scenario.name}")
+            return updated_scenario
+
+    def delete_scenario(self, scenario_id: int) -> None:
+        with self.session_scope() as session:
+            image = session.get(Scenario, scenario_id)
+            if not image:
+                msg = f"Образ с ID {scenario_id} не найден."
+                raise ValueError(msg)
+            session.delete(image)
+            logger.info(f"Удален образ с ID: {scenario_id}")
 
 
 config_manager = ConfigStorage(settings.SQLITE_DB_URL)

@@ -291,6 +291,11 @@ class ScenarioBuilderWidget(QWidget):
         # Обновляем UI
         self.update_step_list()
 
+    def set_scenario(self, scenario_steps: list[ScenarioStep]) -> None:
+        self.steps = scenario_steps
+        self.update_step_list()
+        self._update_tables_info()
+
     # -------------------------------------------
     # МЕТОДЫ ДОБАВЛЕНИЯ ШАГОВ
     # -------------------------------------------
@@ -305,7 +310,11 @@ class ScenarioBuilderWidget(QWidget):
                     f"Добавьте атрибуты таблицы <{table_name}>!",
                 )
                 return
-            step = CreateTableStep(table_name, columns, measure=False)
+            step = CreateTableStep(
+                table_name=table_name,
+                columns=columns,
+                measure=False,
+            )
             self.steps.append(step)
             self.add_step_to_list(step)
             self._update_tables_info()
@@ -375,7 +384,7 @@ class ScenarioBuilderWidget(QWidget):
         self.reorder_steps_by_list()
         return self.steps
 
-    def _update_tables_info(self):
+    def _update_tables_info(self) -> None:
         self.table_infos = {}
         for step in self.steps:
             if step.step_type == StepType.create:

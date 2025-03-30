@@ -62,13 +62,15 @@ class ConfigApp(QWidget):
         super().__init__()
         self.db_image_label = QLabel("Выберите образ СУБД:")
         self.db_image_combo = QComboBox()
+        self.scenario_label = QLabel("Выберите Сценарий тестирования:")
+        self.scenario_combo = QComboBox()
         self.operation_combo = QComboBox()
         self.records_spinbox = QSpinBox()
         self.data_types_edit = QLineEdit()
         self.stacked_widget: QStackedWidget | None = None
 
         self.add_image_button = QPushButton("Добавить новый образ")
-        self.open_scenario_builder_btn = QPushButton("Открыть конструктор сценариев")
+        self.add_scenario_button = QPushButton("Добавить новый сценарий")
         self.preview_text = QTextEdit()
         self.start_button = QPushButton("Запустить тест")
 
@@ -78,14 +80,10 @@ class ConfigApp(QWidget):
         self.worker = None
 
         self.initUI()
+
         self.reset_parameters()
         self.load_docker_images()
-
-        self.steps_from_scenario = []
-
-    def update_steps(self, steps: list) -> None:
-        self.steps_from_scenario = steps
-        self.update_preview()
+        self.load_scenarios()
 
     def initUI(self) -> None:
         self.setWindowTitle("Docker Configurator")
@@ -105,9 +103,18 @@ class ConfigApp(QWidget):
 
         layout.addWidget(docker_group)
 
-        # --- Кнопка открытия конструктора сценариев ---
-        self.open_scenario_builder_btn.clicked.connect(self.open_scenario_builder)
-        layout.addWidget(self.open_scenario_builder_btn)
+        # ---------------- Группа: Сценарии тестирования ----------------
+        scenario_group = QGroupBox("Сценарии тестирования")
+        scenario_layout = QGridLayout()
+        scenario_group.setLayout(scenario_layout)
+
+        self.add_scenario_button.clicked.connect(self.open_scenario_builder)
+
+        scenario_layout.addWidget(self.scenario_label, 0, 0)
+        scenario_layout.addWidget(self.scenario_combo, 0, 1)
+        scenario_layout.addWidget(self.add_scenario_button, 0, 2)
+
+        layout.addWidget(scenario_group)
 
         # Группа: Предварительный просмотр
         preview_group = QGroupBox("Предварительный просмотр конфигурации")
@@ -129,7 +136,7 @@ class ConfigApp(QWidget):
         """
         Переключает отображение на страницу ScenarioBuilderPage.
         """
-        self.stacked_widget.setCurrentIndex(PageIndex.scenario_builder_page)
+        self.stacked_widget.setCurrentIndex(PageIndex.scenario_page)
 
     def open_docker_config_builder(self) -> None:
         self.stacked_widget.setCurrentIndex(PageIndex.docker_page)
@@ -147,13 +154,21 @@ class ConfigApp(QWidget):
         for image in docker_images:
             self.db_image_combo.addItem(image.name)
 
+    def load_scenarios(self) -> None:
+        scenarios = config_manager.get_all_scenarios()
+        self.scenario_combo.clear()
+        for scenario in scenarios:
+            self.scenario_combo.addItem(scenario.name)
+
     def update_preview(self) -> None:
         self.db_image = self.db_image_combo.currentText()
         self.operation = self.operation_combo.currentText()
         self.num_records = self.records_spinbox.value()
         self.data_types = self.data_types_edit.text()
 
-        steps_info = "\n".join([str(step) for step in self.steps_from_scenario])
+        scenario = config_manager.get_scenario(name=self.scenario_combo.currentText())
+
+        steps_info = "\n".join([str(step) for step in scenario.get_steps()])
         preview = f"""Образ СУБД: {self.db_image}
 {steps_info}
 """
@@ -172,10 +187,12 @@ class ConfigApp(QWidget):
             QMessageBox.warning(self, "Предупреждение", "Тест уже выполняется!")
             return
 
+        scenario = config_manager.get_scenario(name=self.scenario_combo.currentText())
+
         self.thread = QThread(self)
         self.worker = DockerTestRunner(
-            db_image=self.db_image,
-            scenario_steps=self.steps_from_scenario,
+            db_image=self.db_image_combo.currentText(),
+            scenario_steps=scenario.get_steps(),
             parent=None,
         )
         self.worker.moveToThread(self.thread)

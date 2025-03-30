@@ -115,7 +115,7 @@ class DockerImagesPage(QWidget):
         if not new_image:
             QMessageBox.warning(self, "Ошибка", "Введите имя образа.")
             return
-        image = config_manager.add_docker_image(name=new_image)
+        image = config_manager.add_docker_image(DockerImage(name=new_image))
         self._add_image_to_list(image)
         QMessageBox.information(
             self,
