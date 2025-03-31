@@ -20,3 +20,9 @@ postgres: {
          },
      }
 ```
+
+# UI
+![main_window](app_screenshots/main_window.png)
+![create_scenario.png](app_screenshots/create_scenario.png)
+![docker_images.png](app_screenshots/docker_images.png)
+![test_results.png](app_screenshots/test_results.png)
