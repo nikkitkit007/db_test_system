@@ -334,8 +334,8 @@ class ScenarioBuilderWidget(QWidget):
                 return
 
             step = InsertDataStep(
-                table_name,
-                num_records,
+                table_name=table_name,
+                num_records=num_records,
                 columns=columns,
                 measure=False,
             )
@@ -350,7 +350,7 @@ class ScenarioBuilderWidget(QWidget):
             "SELECT * FROM table;",
         )
         if ok and text.strip():
-            step = QueryStep(text.strip(), measure=False)
+            step = QueryStep(query=text.strip(), measure=False)
             self.steps.append(step)
             self.add_step_to_list(step)
 

@@ -36,23 +36,14 @@ class ScenarioBuilderPage(QWidget):
         super().__init__()
         self.stacked_widget = stacked_widget
         self.scenario_builder = ScenarioBuilderWidget(self)
-        self.back_button = QPushButton("Назад")
 
         self.initUI()
 
     def initUI(self) -> None:
         layout = QVBoxLayout()
         layout.addWidget(self.scenario_builder)
-        self.back_button.clicked.connect(self.go_back)
-        layout.addWidget(self.back_button)
 
         self.setLayout(layout)
-
-    def go_back(self) -> None:
-        """Возвращает пользователя в ConfigApp."""
-        if self.stacked_widget is not None:
-            self.steps_updated.emit(self.scenario_builder.get_scenario_steps())
-            self.stacked_widget.setCurrentIndex(PageIndex.config_app)
 
 
 class ConfigApp(QWidget):
@@ -160,20 +151,6 @@ class ConfigApp(QWidget):
         for scenario in scenarios:
             self.scenario_combo.addItem(scenario.name)
 
-    def update_preview(self) -> None:
-        self.db_image = self.db_image_combo.currentText()
-        self.operation = self.operation_combo.currentText()
-        self.num_records = self.records_spinbox.value()
-        self.data_types = self.data_types_edit.text()
-
-        scenario = config_manager.get_scenario(name=self.scenario_combo.currentText())
-
-        steps_info = "\n".join([str(step) for step in scenario.get_steps()])
-        preview = f"""Образ СУБД: {self.db_image}
-{steps_info}
-"""
-        self.preview_text.setText(preview)
-
     def start_process(self) -> None:
         QMessageBox.information(self, "Информация", "Тест успешно запущен!")
         try:
@@ -210,3 +187,8 @@ class ConfigApp(QWidget):
         logger.info("🟢 Тест завершён.")
         self.thread = None
         self.worker = None
+
+    def showEvent(self, event) -> None:
+        super().showEvent(event)
+        self.load_docker_images()
+        self.load_scenarios()

@@ -34,6 +34,12 @@ class DockerImagesPage(QWidget):
         super().__init__(parent)
         self.docker_list: QListWidget = QListWidget()
         self.container_info = QTextEdit()
+        self.custom_image_edit = QLineEdit()
+
+        self.add_image_button = QPushButton("Добавить")
+        self.delete_image_button = QPushButton("Удалить")
+        self.edit_config_button = QPushButton("Редактировать")
+
         self.initUI()
 
     def initUI(self) -> None:
@@ -63,11 +69,7 @@ class DockerImagesPage(QWidget):
         manage_group = QGroupBox("Управление образами")
         manage_layout = QGridLayout()
 
-        self.custom_image_edit = QLineEdit()
         self.custom_image_edit.setPlaceholderText("custom/image:tag")
-        self.add_image_button = QPushButton("Добавить")
-        self.delete_image_button = QPushButton("Удалить")
-        self.edit_config_button = QPushButton("Редактировать")
 
         manage_layout.addWidget(QLabel("Добавить новый образ:"), 0, 0)
         manage_layout.addWidget(self.custom_image_edit, 0, 1)
@@ -82,7 +84,6 @@ class DockerImagesPage(QWidget):
 
         self.setLayout(main_layout)
 
-        # 🔹 Подключение кнопок (заглушки для демонстрации)
         self.add_image_button.clicked.connect(self.add_docker_image)
         self.delete_image_button.clicked.connect(self.delete_docker_image)
         self.edit_config_button.clicked.connect(self.edit_docker_config)

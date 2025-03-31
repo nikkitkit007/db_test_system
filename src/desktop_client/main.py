@@ -61,7 +61,7 @@ class MainApp(QMainWindow):
         self.nav_tree.setHeaderHidden(True)
 
         # Пункт «Конфигурации» (топ‐уровень)
-        self.config_item = QTreeWidgetItem(self.nav_tree, ["Конфигурации"])
+        self.config_item = QTreeWidgetItem(self.nav_tree, ["Тестирование"])
         self.config_item.setIcon(0, QIcon(test_config_icon_path))
 
         # Пункт «Сценарии» (топ‐уровень)

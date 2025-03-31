@@ -8,9 +8,11 @@ from PyQt6.QtWidgets import (
     QListWidgetItem,
     QMessageBox,
     QPushButton,
+    QScrollArea,
+    QSplitter,
     QStackedWidget,
     QVBoxLayout,
-    QWidget, QScrollArea, QSplitter,
+    QWidget,
 )
 
 from src.config.config import settings
@@ -29,7 +31,9 @@ class ScenarioPage(QWidget):
         self.scenario_list = QListWidget()
         self.scenario_name_edit = QLineEdit()
         self.scenario_builder_page = ScenarioBuilderPage(self.stacked_widget)
+
         self.save_button = QPushButton("Сохранить")
+        self.delete_button = QPushButton("Удалить")
 
         self.initUI()
         self.load_scenarios()
@@ -59,8 +63,11 @@ class ScenarioPage(QWidget):
         right_layout.addWidget(scroll_area, 1)  # растяжимый блок
 
         # Кнопка «Сохранить» (нижняя часть)
-        self.save_button.clicked.connect(self.save_scenario)
         right_layout.addWidget(self.save_button)
+        right_layout.addWidget(self.delete_button)
+
+        self.save_button.clicked.connect(self.save_scenario)
+        self.delete_button.clicked.connect(self.delete_scenario)
 
         splitter.addWidget(right_widget)
         splitter.setStretchFactor(1, 2)
@@ -121,3 +128,19 @@ class ScenarioPage(QWidget):
                 f"Сценарий '{scenario_name}' создан.",
             )
             self._add_scenario_to_list(scenario)
+
+    def delete_scenario(self) -> None:
+        scenario = self.scenario_list.currentItem()
+        if not scenario:
+            QMessageBox.warning(self, "Ошибка", "Выберете сценарий для удаления.")
+            return
+
+        config_manager.delete_scenario(
+            scenario_id=scenario.data(Qt.ItemDataRole.UserRole),
+        )
+        self.scenario_list.takeItem(self.scenario_list.row(scenario))
+        QMessageBox.information(
+            self,
+            "Удалено",
+            f"Сценарий {scenario.text()} удален.",
+        )
