@@ -20,12 +20,11 @@ from src.desktop_client.docker_config import DockerImagesPage, docker_image_icon
 from src.desktop_client.results.test_result_tab import TestResultsApp, results_icon_path
 from src.desktop_client.test_conf_tab import (
     ConfigApp,
-    ScenarioBuilderPage,
     test_config_icon_path,
 )
 from src.desktop_client.test_configuration.scenario_tab import (
     ScenarioPage,
-    scenario_icon_path,
+    scenario_icon_path, ScenarioBuilderPage,
 )
 
 

@@ -34,7 +34,8 @@ class CreateTableStep(ScenarioStep):
 
     def __str__(self) -> str:
         measure_flag = "[M]" if self.measure else "[ ]"
-        return f"{measure_flag} Создание таблицы: {self.table_name} (Колонки={self.columns})"
+        columns = {col_name: data_type.value for col_name, data_type in self.columns.items()}
+        return f"{measure_flag} Создание таблицы: {self.table_name} (Колонки={columns})"
 
 
 class InsertDataStep(ScenarioStep):

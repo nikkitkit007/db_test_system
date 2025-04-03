@@ -1,6 +1,6 @@
 import os
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QHBoxLayout,
     QLineEdit,
@@ -16,7 +16,7 @@ from PyQt6.QtWidgets import (
 )
 
 from src.config.config import settings
-from src.desktop_client.test_conf_tab import ScenarioBuilderPage
+from src.desktop_client.test_configuration.scenario_builder import ScenarioBuilderWidget
 from src.storage.config_storage import config_manager
 from src.storage.model import Scenario
 
@@ -28,6 +28,7 @@ class ScenarioPage(QWidget):
     def __init__(self, stacked_widget: QStackedWidget = None, parent=None) -> None:
         super().__init__(parent)
         self.stacked_widget = stacked_widget
+        self.new_scenario_button = QPushButton("Новый сценарий")
         self.scenario_list = QListWidget()
         self.scenario_name_edit = QLineEdit()
         self.scenario_builder_page = ScenarioBuilderPage(self.stacked_widget)
@@ -43,8 +44,13 @@ class ScenarioPage(QWidget):
         splitter = QSplitter(Qt.Orientation.Horizontal)
 
         # Левая часть: список сценариев
+        left_widget = QWidget()
+        left_layout = QVBoxLayout(left_widget)
+        left_layout.addWidget(self.new_scenario_button)
+        left_layout.addWidget(self.scenario_list)
+        self.new_scenario_button.clicked.connect(self.create_new_scenario)
         self.scenario_list.itemClicked.connect(self.load_scenario_into_builder)
-        splitter.addWidget(self.scenario_list)
+        splitter.addWidget(left_widget)
         splitter.setStretchFactor(0, 1)
 
         # Правая часть: вертикальный layout с полем ввода, конструктором и кнопкой
@@ -82,6 +88,15 @@ class ScenarioPage(QWidget):
         self.scenario_list.clear()
         for scenario in scenarios:
             self._add_scenario_to_list(scenario)
+
+    def create_new_scenario(self) -> None:
+        """
+        Очищает правую панель для создания нового сценария.
+        """
+        self.scenario_list.clearSelection()
+        self.scenario_name_edit.clear()
+        self.scenario_builder_page.scenario_builder.clear()
+        self.scenario_name_edit.setFocus()
 
     def _add_scenario_to_list(self, scenario: Scenario) -> None:
         item = QListWidgetItem(scenario.name)
@@ -139,8 +154,28 @@ class ScenarioPage(QWidget):
             scenario_id=scenario.data(Qt.ItemDataRole.UserRole),
         )
         self.scenario_list.takeItem(self.scenario_list.row(scenario))
+        self.scenario_name_edit.clear()
+        self.scenario_builder_page.scenario_builder.clear()
+
         QMessageBox.information(
             self,
             "Удалено",
             f"Сценарий {scenario.text()} удален.",
         )
+
+
+class ScenarioBuilderPage(QWidget):
+    steps_updated = pyqtSignal(list)
+
+    def __init__(self, stacked_widget: QStackedWidget) -> None:
+        super().__init__()
+        self.stacked_widget = stacked_widget
+        self.scenario_builder = ScenarioBuilderWidget(self)
+
+        self.initUI()
+
+    def initUI(self) -> None:
+        layout = QVBoxLayout()
+        layout.addWidget(self.scenario_builder)
+
+        self.setLayout(layout)

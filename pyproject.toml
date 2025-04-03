@@ -27,6 +27,11 @@ cryptography = "^44.0.2"
 oracledb = "^3.0.0"
 pyodbc = "^5.2.0"
 sqlalchemy-firebird = "^2.1"
+langchain-community = "^0.3.20"
+langchain-core = "^0.3.49"
+grpcio = "^1.71.0"
+grpcio-tools = "^1.71.0"
+yandexcloud = "^0.337.0"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "~0.9.3"

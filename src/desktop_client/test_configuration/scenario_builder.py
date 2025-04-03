@@ -389,3 +389,8 @@ class ScenarioBuilderWidget(QWidget):
         for step in self.steps:
             if step.step_type == StepType.create:
                 self.table_infos[step.table_name] = TableInfo(columns=step.columns)
+
+    def clear(self) -> None:
+        self.steps = []
+        self.table_infos = {}
+        self.step_list.clear()

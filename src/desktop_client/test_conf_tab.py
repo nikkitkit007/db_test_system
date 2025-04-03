@@ -20,30 +20,12 @@ from PyQt6.QtWidgets import (
 from src.config.config import settings
 from src.config.log import get_logger
 from src.desktop_client.config import PageIndex
-from src.desktop_client.test_configuration.scenario_builder import ScenarioBuilderWidget
 from src.desktop_client.test_runner import DockerTestRunner
 from src.storage.config_storage import config_manager
 
 test_config_icon_path = os.path.join(settings.ICONS_PATH, "test_config_icon.svg")
 
 logger = get_logger(__name__)
-
-
-class ScenarioBuilderPage(QWidget):
-    steps_updated = pyqtSignal(list)
-
-    def __init__(self, stacked_widget: QStackedWidget) -> None:
-        super().__init__()
-        self.stacked_widget = stacked_widget
-        self.scenario_builder = ScenarioBuilderWidget(self)
-
-        self.initUI()
-
-    def initUI(self) -> None:
-        layout = QVBoxLayout()
-        layout.addWidget(self.scenario_builder)
-
-        self.setLayout(layout)
 
 
 class ConfigApp(QWidget):
