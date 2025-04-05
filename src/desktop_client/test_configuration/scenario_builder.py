@@ -17,9 +17,10 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QSpinBox,
     QVBoxLayout,
-    QWidget,
+    QWidget, QTextEdit,
 )
 
+from src.core.llm import get_tables_list
 from src.core.scenario_steps import (
     CreateTableStep,
     InsertDataStep,
@@ -32,6 +33,96 @@ from src.schemas.enums import DataType
 
 class TableInfo(BaseModel):
     columns: dict[str, DataType]
+
+
+class SelectTableStepsDialog(QDialog):
+    def __init__(self, table_steps, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Выберите таблицы для создания")
+        self.table_steps = table_steps  # исходный список шагов
+        self.initUI()
+
+    def initUI(self):
+        layout = QVBoxLayout()
+
+        instruction_label = QLabel("Отметьте таблицы, которые необходимо оставить:")
+        layout.addWidget(instruction_label)
+
+        self.list_widget = QListWidget()
+        # Заполняем список элементами, каждый из которых можно отметить
+        for step in self.table_steps:
+            # Используем строковое представление шага для отображения
+            item = QListWidgetItem(str(step))
+            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+            item.setCheckState(Qt.CheckState.Checked)  # по умолчанию все выбраны
+            self.list_widget.addItem(item)
+        layout.addWidget(self.list_widget)
+
+        # Кнопки OK / Cancel
+        btn_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        btn_box.accepted.connect(self.accept)
+        btn_box.rejected.connect(self.reject)
+        layout.addWidget(btn_box)
+
+        self.setLayout(layout)
+
+    def get_selected_steps(self):
+        selected_steps = []
+        for i in range(self.list_widget.count()):
+            item = self.list_widget.item(i)
+            if item.checkState() == Qt.CheckState.Checked:
+                selected_steps.append(self.table_steps[i])
+        return selected_steps
+
+
+class QueryDialog(QDialog):
+    def __init__(self, query: str = "", parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("SQL Query")
+        self.query = query
+        self.analyze_query_for_init_button = QPushButton("Проанализировать запрос для создания схемы данных")
+        self.create_table_steps_for_run_query = []
+        self.text_edit = QTextEdit()
+
+        self.initUI()
+
+    def initUI(self) -> None:
+        layout = QVBoxLayout()
+
+        # Метка с инструкцией
+        instruction_label = QLabel("Введите SQL-запрос:")
+        layout.addWidget(instruction_label)
+
+        # Текстовое поле для ввода запроса
+        if self.query:
+            self.text_edit.setPlainText(self.query)
+        else:
+            self.text_edit.setPlainText("SELECT * FROM table;")
+        layout.addWidget(self.text_edit)
+
+        # Чекбокс для дополнительного анализа
+        self.analyze_query_for_init_button.clicked.connect(self.analyze_query_for_init)
+        layout.addWidget(self.analyze_query_for_init_button)
+
+        # Кнопки OK / Cancel
+        btn_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        btn_box.accepted.connect(self.accept)
+        btn_box.rejected.connect(self.reject)
+        layout.addWidget(btn_box)
+
+        self.setLayout(layout)
+
+    def get_data(self) -> tuple[str, list]:
+        sql_query = self.text_edit.toPlainText().strip()
+        return sql_query, self.create_table_steps_for_run_query
+
+    def analyze_query_for_init(self):
+        self.create_table_steps_for_run_query = get_tables_list(self.text_edit.toPlainText())
+
+        select_dialog = SelectTableStepsDialog(self.create_table_steps_for_run_query, self)
+        if select_dialog.exec() == QDialog.DialogCode.Accepted:
+            self.create_table_steps_for_run_query = select_dialog.get_selected_steps()
+        return self.create_table_steps_for_run_query
 
 
 class CreateTableDialog(QDialog):
@@ -265,28 +356,20 @@ class ScenarioBuilderWidget(QWidget):
                 step.table_name = table_name
                 step.columns = columns
             self._update_tables_info()
-
         elif step.step_type == StepType.insert:
             table_names = list(self.table_infos.keys())
             dialog = InsertDataDialog(table_names, self)
             dialog.combo_table_name.setObjectName(step.table_name)
             dialog.spin_num_records.setValue(step.num_records)
-            # Заполнение data_types при необходимости
             if dialog.exec() == QDialog.DialogCode.Accepted:
                 table_name, num_records, data_types = dialog.get_data()
                 step.table_name = table_name
                 step.num_records = num_records
-                # step.data_types = data_types  # если поле есть
-
         elif step.step_type == StepType.query:
-            text, ok = QInputDialog.getMultiLineText(
-                self,
-                "Редактировать SQL-запрос",
-                "Введите SQL-запрос:",
-                step.query,
-            )
-            if ok and text.strip():
-                step.query = text.strip()
+            dialog = QueryDialog(query=step.query, parent=self)
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                query, additional_steps = dialog.get_data()
+                step.query = query
 
         # Обновляем UI
         self.update_step_list()
@@ -343,14 +426,23 @@ class ScenarioBuilderWidget(QWidget):
             self.add_step_to_list(step)
 
     def add_query_step(self) -> None:
-        text, ok = QInputDialog.getMultiLineText(
-            self,
-            "SQL Query",
-            "Введите SQL-запрос:",
-            "SELECT * FROM table;",
-        )
-        if ok and text.strip():
-            step = QueryStep(query=text.strip(), measure=False)
+        dialog = QueryDialog(parent=self)
+
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            query, additional_steps = dialog.get_data()
+            step = QueryStep(query=query, measure=False)
+
+            if additional_steps:
+                for add_step in additional_steps:
+                    updated = False
+                    for existing_step in self.steps:
+                        if existing_step.step_type == StepType.create and existing_step.table_name == add_step.table_name:
+                            existing_step.columns.update(add_step.columns)
+                            updated = True
+                            break
+                    if not updated:
+                        self.steps.append(add_step)
+                        self.add_step_to_list(add_step)
             self.steps.append(step)
             self.add_step_to_list(step)
 

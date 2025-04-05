@@ -18,3 +18,6 @@ class DataType(str, AutoName):
     float = auto()
     date = auto()
     bool = auto()
+
+
+data_type_list = [item.value for item in DataType]
