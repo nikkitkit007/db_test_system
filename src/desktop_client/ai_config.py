@@ -52,7 +52,7 @@ class AiConfigPage(QWidget):
         self.setLayout(layout)
         self.load_ai_config()
 
-    def save_ai_config(self):
+    def save_ai_config(self) -> None:
         text = self.json_text_edit.toPlainText().strip()
         self._validate_json(text)
         ai_config = AiConfig(
@@ -67,14 +67,18 @@ class AiConfigPage(QWidget):
             existing_config.config = ai_config.config
             config_manager.update_ai_config(existing_config)
 
-    def load_ai_config(self):
+    def load_ai_config(self) -> None:
         provider_name = self.combo_provider.currentText()
         ai_config = config_manager.get_ai_config(name=provider_name)
         if ai_config is None:
             self.json_text_edit.setPlainText(text=None)
             return
         try:
-            text = json.dumps(json.loads(ai_config.config), indent=4, ensure_ascii=False)
+            text = json.dumps(
+                json.loads(ai_config.config),
+                indent=4,
+                ensure_ascii=False,
+            )
             self.json_text_edit.setPlainText(text)
         except TypeError as e:
             QMessageBox.critical(
