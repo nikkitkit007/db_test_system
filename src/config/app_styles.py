@@ -137,7 +137,7 @@ QTreeWidget {
 }
 
 QTreeWidget::item:hover {
-    background-color: #505050;
+    background-color: #6F8AA9;
 }
 
 /* ================ TOOL BUTTON (иконки в sidebar, к примеру) ================ */
