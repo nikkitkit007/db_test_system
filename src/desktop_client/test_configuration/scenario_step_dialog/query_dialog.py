@@ -8,16 +8,19 @@ from PyQt6.QtWidgets import (
     QListWidgetItem,
     QPushButton,
     QTextEdit,
-    QVBoxLayout,
+    QVBoxLayout, QComboBox, QHBoxLayout,
 )
-from src.core.llm.ygpt import get_tables_list
+
+from src.core.llm.predictor import possible_llm, get_tables_list
+from src.core.scenario_steps import CreateTableStep
 
 
 class SelectTableStepsDialog(QDialog):
-    def __init__(self, table_steps, parent=None) -> None:
+    def __init__(self, table_steps: list[CreateTableStep], parent=None) -> None:
         super().__init__(parent)
         self.setWindowTitle("Выберите таблицы для создания")
         self.table_steps = table_steps  # исходный список шагов
+        self.list_widget = QListWidget()
         self.initUI()
 
     def initUI(self) -> None:
@@ -26,17 +29,13 @@ class SelectTableStepsDialog(QDialog):
         instruction_label = QLabel("Отметьте таблицы, которые необходимо оставить:")
         layout.addWidget(instruction_label)
 
-        self.list_widget = QListWidget()
-        # Заполняем список элементами, каждый из которых можно отметить
         for step in self.table_steps:
-            # Используем строковое представление шага для отображения
             item = QListWidgetItem(str(step))
             item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
             item.setCheckState(Qt.CheckState.Checked)  # по умолчанию все выбраны
             self.list_widget.addItem(item)
         layout.addWidget(self.list_widget)
 
-        # Кнопки OK / Cancel
         btn_box = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel,
         )
@@ -60,6 +59,10 @@ class QueryDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("SQL Query")
         self.query = query or "SELECT * FROM table;"
+
+        self.llm_selector = QComboBox()
+        self.llm_selector.addItems(possible_llm)
+
         self.analyze_query_for_init_button = QPushButton(
             "Проанализировать запрос для создания схемы данных",
         )
@@ -78,8 +81,13 @@ class QueryDialog(QDialog):
 
         layout.addWidget(self.text_edit)
 
+        # Горизонтальный контейнер для выпадающего списка и кнопки
+        h_layout = QHBoxLayout()
+        h_layout.addWidget(self.llm_selector)
+        h_layout.addWidget(self.analyze_query_for_init_button)
+        layout.addLayout(h_layout)
+
         self.analyze_query_for_init_button.clicked.connect(self.analyze_query_for_init)
-        layout.addWidget(self.analyze_query_for_init_button)
 
         btn_box = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel,
@@ -96,15 +104,17 @@ class QueryDialog(QDialog):
 
     def analyze_query_for_init(self):
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        llm = self.llm_selector.currentText()
         try:
             self.create_table_steps_for_run_query = get_tables_list(
                 self.text_edit.toPlainText(),
+                llm
             )
         finally:
             QApplication.restoreOverrideCursor()
 
         select_dialog = SelectTableStepsDialog(
-            self.create_table_steps_for_run_query,
+            self.create_table_steps_for_run_query or [],
             self,
         )
         if select_dialog.exec() == QDialog.DialogCode.Accepted:

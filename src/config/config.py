@@ -24,9 +24,6 @@ class Settings(BaseSettings):
     CSV_FILE_WITH_TEST_DATA: str = "test_data.csv"
     ICONS_PATH: str = "./src/resources/icons"
 
-    YANDEX_API_KEY: str | None = None
-    YANDEX_FOLDER_ID: str | None = None
-
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

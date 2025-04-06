@@ -12,10 +12,11 @@ from PyQt6.QtWidgets import (
 )
 
 from src.config.config import settings
+from src.core.llm.predictor import possible_llm
 from src.storage.config_storage import config_manager
 from src.storage.model import AiConfig
 
-ai_config_icon_path = os.path.join(settings.ICONS_PATH, "docker_icon.svg")
+ai_config_icon_path = os.path.join(settings.ICONS_PATH, "ai_config_icon.svg")
 
 
 class AiConfigPage(QWidget):
@@ -33,7 +34,7 @@ class AiConfigPage(QWidget):
         label_provider = QLabel("Выберите провайдера AI:")
         layout.addWidget(label_provider)
 
-        self.combo_provider.addItems(["OpenAI", "ygpt"])  # Добавьте при необходимости
+        self.combo_provider.addItems(possible_llm)  # Добавьте при необходимости
         layout.addWidget(self.combo_provider)
 
         self.combo_provider.currentIndexChanged.connect(self.load_ai_config)

@@ -1,3 +1,5 @@
+from typing import Any
+
 from langchain_community.chat_models.yandex import ChatYandexGPT
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import PromptTemplate
@@ -7,15 +9,9 @@ import src.core.scenario_steps as steps
 from src.config.config import settings
 from src.config.log import get_logger
 from src.schemas.enums import DataType, data_type_list  # noqa
+from src.storage.model import AiConfig
 
 logger = get_logger(__name__)
-
-
-llm = ChatYandexGPT(
-    api_key=settings.YANDEX_API_KEY,
-    folder_id=settings.YANDEX_FOLDER_ID,
-    model_name="yandexgpt",
-)
 
 
 class CreateTableStep(BaseModel):
@@ -28,7 +24,18 @@ class TablesList(RootModel[list[CreateTableStep]]):
     pass
 
 
-def get_tables_list(sql_query: str) -> list[steps.CreateTableStep]:
+def get_tables_list(sql_query: str, llm_config: dict[str, Any]) -> list[steps.CreateTableStep]:
+    llm = ChatYandexGPT(
+        api_key=llm_config['api_key'],
+        folder_id=llm_config['folder_id'],
+        model_name=llm_config.get("model_name") or "yandexgpt",
+    )
+    # llm = ChatYandexGPT(
+    #     api_key=settings.YANDEX_API_KEY,
+    #     folder_id=settings.YANDEX_FOLDER_ID,
+    #     model_name="yandexgpt",
+    # )
+
     parser = PydanticOutputParser(pydantic_object=TablesList)
 
     format_instructions = parser.get_format_instructions()
@@ -69,6 +76,6 @@ def get_tables_list(sql_query: str) -> list[steps.CreateTableStep]:
 
 
 if __name__ == "__main__":
-    # sql_query = "SELECT a.*, b.name FROM a INNER JOIN b USING(id) LEFT join c on b.mpn = c.mfr WHERE a.age > 15"
-    sql_query = "select a, b from c"
-    tables = get_tables_list(sql_query)
+    # test_sql_query = "SELECT a.*, b.name FROM a INNER JOIN b USING(id) LEFT join c on b.mpn = c.mfr WHERE a.age > 15"
+    test_sql_query = "select a, b from c"
+    tables = get_tables_list(test_sql_query)

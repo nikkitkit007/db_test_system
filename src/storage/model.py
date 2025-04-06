@@ -1,5 +1,6 @@
 import datetime
 import json
+from typing import Any
 
 from sqlalchemy import Column, DateTime, Float, Integer, String, Text
 from sqlalchemy.orm import declarative_base
@@ -36,7 +37,13 @@ class AiConfig(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, unique=True, nullable=False)
+
     config = Column(Text, nullable=True)
+
+    def get_config_as_dict(self) -> dict[str, Any]:
+        if not self.config:
+            return {}
+        return json.loads(self.config)
 
 
 class Scenario(Base):
