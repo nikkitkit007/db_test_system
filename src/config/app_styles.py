@@ -1,7 +1,7 @@
 style_sheet = """
 /* ================ ОБЩИЙ ФОН MAINWINDOW ================ */
 QMainWindow {
-    background-color: #f2f2f2; /* чуть светлее серый фон */
+    background-color: #f2f2f2;
     color: #333333;
     font-family: Arial, sans-serif;
     font-size: 14px;
@@ -126,12 +126,13 @@ QListWidget {
 
 /* ================ SIDEBAR / TREEWIDGET ================ */
 #sidebar {
-    background-color: #2e2e2e;
+    background-color: #2E2E2E; /* Тёмно-серый */
+    /* Можно чуть светлее: #3C3C3C, чтобы был виден контраст для чёрных иконок */
 }
 
 QTreeWidget {
-    background-color: #2e2e2e;
-    color: #ffffff;
+    background-color: #2E2E2E;
+    color: #FFFFFF;
     border: none;
 }
 
@@ -141,8 +142,8 @@ QTreeWidget::item:hover {
 
 /* ================ TOOL BUTTON (иконки в sidebar, к примеру) ================ */
 QToolButton {
-    color: white;
-    background-color: #2e2e2e;
+    color: #FFFFFF;               /* Текст и иконки будут белыми, если это SVG со стилями */
+    background-color: #2E2E2E;
     border: none;
     padding: 8px;
     font-size: 14px;

@@ -15,6 +15,7 @@ from PyQt6.QtWidgets import (
 )
 
 from src.config.app_styles import style_sheet
+from src.config.config import settings
 from src.desktop_client.ai_config import AiConfigPage, ai_config_icon_path
 from src.desktop_client.config import PageIndex
 from src.desktop_client.docker_config import DockerImagesPage, docker_image_icon_path
@@ -28,6 +29,9 @@ from src.desktop_client.test_configuration.scenario_tab import (
     ScenarioPage,
     scenario_icon_path,
 )
+import os
+
+app_config_icon_path = os.path.join(settings.ICONS_PATH, "app_config_icon.svg")
 
 
 class MainApp(QMainWindow):
@@ -75,7 +79,7 @@ class MainApp(QMainWindow):
 
         # Пункт «Система» (топ‐уровень)
         self.system_item = QTreeWidgetItem(self.nav_tree, ["Система"])
-        self.system_item.setIcon(0, QIcon(test_config_icon_path))
+        self.system_item.setIcon(0, QIcon(app_config_icon_path))
         self.system_item.setExpanded(True)
 
         # Дочерний пункт: «Образы Docker»
@@ -165,7 +169,7 @@ class MainApp(QMainWindow):
             self.sidebar_expanded = False
             self.sidebar.setMinimumWidth(self.collapsed_width)
             self.sidebar.setMaximumWidth(self.collapsed_width)
-            self.btn_toggle.setText("Expand")
+            self.btn_toggle.setText("<->")
             self._update_nav_tree_collapsed(collapsed=True)
             self.nav_tree.setHorizontalScrollBarPolicy(
                 Qt.ScrollBarPolicy.ScrollBarAlwaysOff,
