@@ -140,6 +140,11 @@ QTreeWidget::item:hover {
     background-color: #6F8AA9;
 }
 
+QTreeWidget::item:selected {
+    background-color: #6F8AA9; /* Цвет выделения, например, синий */
+    color: #ffffff;            /* Цвет текста при выделении */
+}
+
 /* ================ TOOL BUTTON (иконки в sidebar, к примеру) ================ */
 QToolButton {
     color: #FFFFFF;               /* Текст и иконки будут белыми, если это SVG со стилями */

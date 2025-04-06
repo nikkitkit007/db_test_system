@@ -1,3 +1,5 @@
+import os
+
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
@@ -29,7 +31,6 @@ from src.desktop_client.test_configuration.scenario_tab import (
     ScenarioPage,
     scenario_icon_path,
 )
-import os
 
 app_config_icon_path = os.path.join(settings.ICONS_PATH, "app_config_icon.svg")
 
