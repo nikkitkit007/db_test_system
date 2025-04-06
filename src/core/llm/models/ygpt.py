@@ -6,10 +6,8 @@ from langchain_core.prompts import PromptTemplate
 from pydantic import BaseModel, Field, RootModel
 
 import src.core.scenario_steps as steps
-from src.config.config import settings
 from src.config.log import get_logger
 from src.schemas.enums import DataType, data_type_list  # noqa
-from src.storage.model import AiConfig
 
 logger = get_logger(__name__)
 
@@ -24,10 +22,13 @@ class TablesList(RootModel[list[CreateTableStep]]):
     pass
 
 
-def get_tables_list(sql_query: str, llm_config: dict[str, Any]) -> list[steps.CreateTableStep]:
+def get_tables_list(
+    sql_query: str,
+    llm_config: dict[str, Any],
+) -> list[steps.CreateTableStep]:
     llm = ChatYandexGPT(
-        api_key=llm_config['api_key'],
-        folder_id=llm_config['folder_id'],
+        api_key=llm_config["api_key"],
+        folder_id=llm_config["folder_id"],
         model_name=llm_config.get("model_name") or "yandexgpt",
     )
     # llm = ChatYandexGPT(

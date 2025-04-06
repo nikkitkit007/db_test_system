@@ -12,7 +12,6 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QSpinBox,
     QStackedWidget,
-    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
@@ -44,7 +43,6 @@ class ConfigApp(QWidget):
 
         self.add_image_button = QPushButton("Добавить новый образ")
         self.add_scenario_button = QPushButton("Добавить новый сценарий")
-        self.preview_text = QTextEdit()
         self.start_button = QPushButton("Запустить тест")
 
         self.stacked_widget = stacked_widget  # Ссылка на QStackedWidget
@@ -54,7 +52,6 @@ class ConfigApp(QWidget):
 
         self.initUI()
 
-        self.reset_parameters()
         self.load_docker_images()
         self.load_scenarios()
 
@@ -89,15 +86,7 @@ class ConfigApp(QWidget):
 
         layout.addWidget(scenario_group)
 
-        # Группа: Предварительный просмотр
-        preview_group = QGroupBox("Предварительный просмотр конфигурации")
-        preview_layout = QVBoxLayout()
-        preview_group.setLayout(preview_layout)
-
-        self.preview_text.setReadOnly(True)
-        preview_layout.addWidget(self.preview_text)
-
-        layout.addWidget(preview_group)
+        layout.addStretch()
 
         # Кнопка запуска
         self.start_button.clicked.connect(self.start_process)
@@ -113,12 +102,6 @@ class ConfigApp(QWidget):
 
     def open_docker_config_builder(self) -> None:
         self.stacked_widget.setCurrentIndex(PageIndex.docker_page)
-
-    def reset_parameters(self) -> None:
-        self.db_image = ""
-        self.operation = ""
-        self.num_records = 0
-        self.data_types = []
 
     def load_docker_images(self) -> None:
         """Загружает образы Docker из базы данных в выпадающий список."""

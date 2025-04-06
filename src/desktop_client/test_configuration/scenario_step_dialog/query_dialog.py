@@ -1,17 +1,18 @@
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QApplication,
+    QComboBox,
     QDialog,
     QDialogButtonBox,
+    QHBoxLayout,
     QLabel,
     QListWidget,
     QListWidgetItem,
     QPushButton,
     QTextEdit,
-    QVBoxLayout, QComboBox, QHBoxLayout,
+    QVBoxLayout,
 )
-
-from src.core.llm.predictor import possible_llm, get_tables_list
+from src.core.llm.predictor import get_tables_list, possible_llm
 from src.core.scenario_steps import CreateTableStep
 
 
@@ -108,7 +109,7 @@ class QueryDialog(QDialog):
         try:
             self.create_table_steps_for_run_query = get_tables_list(
                 self.text_edit.toPlainText(),
-                llm
+                llm,
             )
         finally:
             QApplication.restoreOverrideCursor()
