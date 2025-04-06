@@ -2,8 +2,9 @@ from langchain_community.chat_models.yandex import ChatYandexGPT
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import PromptTemplate
 from pydantic import BaseModel, Field, RootModel
-from src.config.config import settings
+
 import src.core.scenario_steps as steps
+from src.config.config import settings
 from src.config.log import get_logger
 from src.schemas.enums import DataType, data_type_list  # noqa
 
@@ -13,7 +14,7 @@ logger = get_logger(__name__)
 llm = ChatYandexGPT(
     api_key=settings.YANDEX_API_KEY,
     folder_id=settings.YANDEX_FOLDER_ID,
-    model_name="yandexgpt"
+    model_name="yandexgpt",
 )
 
 
@@ -58,14 +59,16 @@ def get_tables_list(sql_query: str) -> list[steps.CreateTableStep]:
 
     try:
         create_steps: list[CreateTableStep] = llm_chain.invoke(sql_query).root or []
-        return [steps.CreateTableStep(table_name=step.table_name, columns=step.columns) for step in create_steps]
+        return [
+            steps.CreateTableStep(table_name=step.table_name, columns=step.columns)
+            for step in create_steps
+        ]
 
     except Exception as e:
-        logger.error("Ошибка:", e)
+        logger.exception("Ошибка:", e)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # sql_query = "SELECT a.*, b.name FROM a INNER JOIN b USING(id) LEFT join c on b.mpn = c.mfr WHERE a.age > 15"
-    sql_query = 'select a, b from c'
+    sql_query = "select a, b from c"
     tables = get_tables_list(sql_query)
-    print(tables)

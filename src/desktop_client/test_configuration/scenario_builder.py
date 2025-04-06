@@ -1,32 +1,35 @@
+from functools import partial
+
 from pydantic import BaseModel
-from PyQt6.QtCore import QEvent, Qt
+from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
-    QComboBox,
     QDialog,
-    QDialogButtonBox,
-    QFormLayout,
     QHBoxLayout,
-    QInputDialog,
-    QLabel,
-    QLineEdit,
-    QListWidget,
-    QListWidgetItem,
     QMessageBox,
     QPushButton,
-    QSpinBox,
+    QTableWidget,
+    QTableWidgetItem,
     QVBoxLayout,
-    QWidget, QTextEdit,
+    QWidget,
 )
 
-from src.core.llm import get_tables_list
 from src.core.scenario_steps import (
     CreateTableStep,
     InsertDataStep,
     QueryStep,
     ScenarioStep,
     StepType,
+)
+from src.desktop_client.test_configuration.scenario_step_dialog.create_table_dialog import (
+    CreateTableDialog,
+)
+from src.desktop_client.test_configuration.scenario_step_dialog.insert_data_dialog import (
+    InsertDataDialog,
+)
+from src.desktop_client.test_configuration.scenario_step_dialog.query_dialog import (
+    QueryDialog,
 )
 from src.schemas.enums import DataType
 
@@ -35,241 +38,48 @@ class TableInfo(BaseModel):
     columns: dict[str, DataType]
 
 
-class SelectTableStepsDialog(QDialog):
-    def __init__(self, table_steps, parent=None):
+class DraggableTableWidget(QTableWidget):
+    def __init__(self, scenario_builder, parent=None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Выберите таблицы для создания")
-        self.table_steps = table_steps  # исходный список шагов
-        self.initUI()
+        self.scenario_builder = scenario_builder
 
-    def initUI(self):
-        layout = QVBoxLayout()
+        self.setDragEnabled(True)
+        self.setAcceptDrops(True)
+        self.viewport().setAcceptDrops(True)
+        self.setDragDropOverwriteMode(False)
+        self.setDropIndicatorShown(True)
+        self.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+        self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
 
-        instruction_label = QLabel("Отметьте таблицы, которые необходимо оставить:")
-        layout.addWidget(instruction_label)
+    def dropEvent(self, event) -> None:
+        if event.source() and self.isAncestorOf(event.source()):
+            super().dropEvent(event)
+            return
+        selected_rows = sorted({i.row() for i in self.selectedItems()})
+        if not selected_rows:
+            event.ignore()
+            return
 
-        self.list_widget = QListWidget()
-        # Заполняем список элементами, каждый из которых можно отметить
-        for step in self.table_steps:
-            # Используем строковое представление шага для отображения
-            item = QListWidgetItem(str(step))
-            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
-            item.setCheckState(Qt.CheckState.Checked)  # по умолчанию все выбраны
-            self.list_widget.addItem(item)
-        layout.addWidget(self.list_widget)
+        target_row = self.indexAt(event.position().toPoint()).row()
+        if target_row == -1:
+            target_row = self.rowCount()
 
-        # Кнопки OK / Cancel
-        btn_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        btn_box.accepted.connect(self.accept)
-        btn_box.rejected.connect(self.reject)
-        layout.addWidget(btn_box)
+        steps = self.scenario_builder.steps
 
-        self.setLayout(layout)
+        to_move = [steps[r] for r in reversed(selected_rows)]
+        for r in reversed(selected_rows):
+            del steps[r]
 
-    def get_selected_steps(self):
-        selected_steps = []
-        for i in range(self.list_widget.count()):
-            item = self.list_widget.item(i)
-            if item.checkState() == Qt.CheckState.Checked:
-                selected_steps.append(self.table_steps[i])
-        return selected_steps
+        num_removed_before = sum(1 for r in selected_rows if r < target_row)
+        new_target_row = max(0, target_row - num_removed_before)
 
+        for obj in reversed(to_move):
+            steps.insert(new_target_row, obj)
 
-class QueryDialog(QDialog):
-    def __init__(self, query: str = "", parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("SQL Query")
-        self.query = query
-        self.analyze_query_for_init_button = QPushButton("Проанализировать запрос для создания схемы данных")
-        self.create_table_steps_for_run_query = []
-        self.text_edit = QTextEdit()
+        event.accept()
 
-        self.initUI()
-
-    def initUI(self) -> None:
-        layout = QVBoxLayout()
-
-        # Метка с инструкцией
-        instruction_label = QLabel("Введите SQL-запрос:")
-        layout.addWidget(instruction_label)
-
-        # Текстовое поле для ввода запроса
-        if self.query:
-            self.text_edit.setPlainText(self.query)
-        else:
-            self.text_edit.setPlainText("SELECT * FROM table;")
-        layout.addWidget(self.text_edit)
-
-        # Чекбокс для дополнительного анализа
-        self.analyze_query_for_init_button.clicked.connect(self.analyze_query_for_init)
-        layout.addWidget(self.analyze_query_for_init_button)
-
-        # Кнопки OK / Cancel
-        btn_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        btn_box.accepted.connect(self.accept)
-        btn_box.rejected.connect(self.reject)
-        layout.addWidget(btn_box)
-
-        self.setLayout(layout)
-
-    def get_data(self) -> tuple[str, list]:
-        sql_query = self.text_edit.toPlainText().strip()
-        return sql_query, self.create_table_steps_for_run_query
-
-    def analyze_query_for_init(self):
-        self.create_table_steps_for_run_query = get_tables_list(self.text_edit.toPlainText())
-
-        select_dialog = SelectTableStepsDialog(self.create_table_steps_for_run_query, self)
-        if select_dialog.exec() == QDialog.DialogCode.Accepted:
-            self.create_table_steps_for_run_query = select_dialog.get_selected_steps()
-        return self.create_table_steps_for_run_query
-
-
-class CreateTableDialog(QDialog):
-    def __init__(self, parent=None) -> None:
-        super().__init__(parent)
-        self.setWindowTitle("Create Table Step")
-        self.table_name = ""
-        self.columns = {}
-        self.column_fields = []  # список для хранения полей колонок
-        self.line_table_name = QLineEdit()
-        self.columns_layout = QVBoxLayout()
-
-        self.initUI()
-
-    def initUI(self) -> None:
-        main_layout = QVBoxLayout()
-
-        # Поле ввода имени таблицы
-        form_layout = QFormLayout()
-        form_layout.addRow("Имя таблицы:", self.line_table_name)
-        main_layout.addLayout(form_layout)
-
-        # Область для колонок
-        main_layout.addLayout(self.columns_layout)
-
-        # Кнопка добавления новой колонки
-        add_col_button = QPushButton("➕ Добавить колонку")
-        add_col_button.clicked.connect(self.add_column_field)
-        main_layout.addWidget(add_col_button)
-
-        # Кнопки OK / Cancel
-        btnBox = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel,
-        )
-        btnBox.accepted.connect(self.accept)
-        btnBox.rejected.connect(self.reject)
-        main_layout.addWidget(btnBox)
-
-        self.setLayout(main_layout)
-
-    def add_column_field(self) -> None:
-        col_layout = QHBoxLayout()
-
-        col_name_edit = QLineEdit()
-        col_name_edit.setPlaceholderText("Имя колонки")
-
-        col_type_combo = QComboBox()
-        col_type_combo.addItems(["int", "str", "float", "bool", "date"])
-
-        col_layout.addWidget(QLabel("Имя:"))
-        col_layout.addWidget(col_name_edit)
-        col_layout.addWidget(QLabel("Тип:"))
-        col_layout.addWidget(col_type_combo)
-
-        container = QWidget()
-        container.setLayout(col_layout)
-        self.columns_layout.addWidget(container)
-
-        self.column_fields.append((col_name_edit, col_type_combo))
-
-    def accept(self) -> None:
-        self.table_name = self.line_table_name.text().strip()
-        self.columns = {}
-        for name_edit, type_combo in self.column_fields:
-            name = name_edit.text().strip()
-            typ = type_combo.currentText().strip()
-            if name:
-                self.columns[name] = typ
-        super().accept()
-
-    def get_data(self):
-        return self.table_name, self.columns
-
-
-class InsertDataDialog(QDialog):
-    def __init__(self, table_names: list[str], parent=None) -> None:
-        super().__init__(parent)
-        self.setWindowTitle("Insert Data Step")
-        self.table_name = ""
-        self.num_records = 0
-        self.data_types = []
-
-        self.combo_table_name = QComboBox()
-        self.combo_table_name.addItems(table_names)
-
-        self.spin_num_records = QSpinBox()
-        self.spin_num_records.setRange(1, 10000000)
-
-        self.initUI()
-
-    def initUI(self) -> None:
-        layout = QFormLayout()
-        layout.addRow("Имя таблицы:", self.combo_table_name)
-        layout.addRow("Количество записей:", self.spin_num_records)
-
-        btnBox = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel,
-        )
-        btnBox.accepted.connect(self.accept)
-        btnBox.rejected.connect(self.reject)
-        layout.addWidget(btnBox)
-        self.setLayout(layout)
-
-    def accept(self) -> None:
-        self.table_name = self.combo_table_name.currentText().strip()
-        self.num_records = self.spin_num_records.value()
-        super().accept()
-
-    def get_data(self):
-        return self.table_name, self.num_records, self.data_types
-
-
-class ScenarioStepItemWidget(QWidget):
-    """
-    Виджет-обёртка, который будет помещаться в QListWidgetItem.
-    Содержит:
-    - QLabel для описания шага
-    - QCheckBox для флага measure
-    """
-
-    def __init__(self, step: ScenarioStep, parent=None) -> None:
-        super().__init__(parent)
-        self.step = step
-        layout = QHBoxLayout()
-        layout.setContentsMargins(5, 2, 5, 2)
-
-        self.label = QLabel(str(self.step))
-        # сам чекбокс
-        self.chk_measure = QCheckBox("Замерить?")
-        self.chk_measure.setChecked(self.step.measure)
-        self.chk_measure.stateChanged.connect(self.on_check_changed)
-
-        layout.addWidget(self.label)
-        layout.addStretch()
-        layout.addWidget(self.chk_measure)
-        self.setLayout(layout)
-
-    def on_check_changed(self, state) -> None:
-        self.step.measure = state == Qt.CheckState.Checked.value
-        self.label.setText(str(self.step))
-
-    def update_contents(self) -> None:
-        """
-        Если нужно обновлять после изменения step извне.
-        """
-        self.chk_measure.setChecked(self.step.measure)
-        self.label.setText(str(self.step))
+        self.scenario_builder.update_step_table()
 
 
 class ScenarioBuilderWidget(QWidget):
@@ -278,8 +88,15 @@ class ScenarioBuilderWidget(QWidget):
         self.steps = []
         self.table_infos: dict[str, TableInfo] = {}
 
-        self.step_list = QListWidget()
-        self.step_list.itemDoubleClicked.connect(self.edit_step)
+        self.step_table = DraggableTableWidget(self)
+        self.step_table.setColumnCount(5)
+        self.step_table.setHorizontalHeaderLabels(
+            ["Учитывать", "Тип операции", "Доп информация", "Удалить"],
+        )
+        self.step_table.hideColumn(4)
+        self.step_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.step_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.step_table.cellDoubleClicked.connect(self.on_cell_double_clicked)
 
         self.btn_create_table = QPushButton("Создать таблицу")
         self.btn_insert_data = QPushButton("Наполнить таблицу")
@@ -290,56 +107,26 @@ class ScenarioBuilderWidget(QWidget):
     def initUI(self) -> None:
         layout = QVBoxLayout()
 
-        # Кнопки добавления
         add_layout = QHBoxLayout()
-
         add_layout.addWidget(self.btn_create_table)
         add_layout.addWidget(self.btn_insert_data)
         add_layout.addWidget(self.btn_add_query)
+        layout.addLayout(add_layout)
 
         self.btn_create_table.clicked.connect(self.add_create_table_step)
         self.btn_insert_data.clicked.connect(self.add_insert_data_step)
         self.btn_add_query.clicked.connect(self.add_query_step)
 
-        layout.addLayout(add_layout)
+        layout.addWidget(self.step_table)
 
-        # QListWidget
-        self.step_list.setDragEnabled(True)
-        self.step_list.setAcceptDrops(True)
-        self.step_list.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
-        self.step_list.setDefaultDropAction(Qt.DropAction.MoveAction)
-
-        self.step_list.installEventFilter(self)
-
-        layout.addWidget(self.step_list)
         self.setLayout(layout)
 
-    def eventFilter(self, source, event):
-        if source is self.step_list and event.type() == QEvent.Type.Drop:
-            result = super().eventFilter(source, event)
-            self.reorder_steps_by_list()
-            return result
-        return super().eventFilter(source, event)
+    def on_cell_double_clicked(self, row: int, column: int) -> None:
+        if row < len(self.steps):
+            self.edit_step(row)
 
-    def reorder_steps_by_list(self) -> None:
-        """
-        После Drag&Drop мы проходимся по QListWidgetItem-ам и восстанавливаем порядок self.steps
-        в соответствии с визуальным порядком.
-        """
-        new_steps = []
-        for i in range(self.step_list.count()):
-            item = self.step_list.item(i)
-            widget = self.step_list.itemWidget(item)
-            if widget and hasattr(widget, "step"):
-                new_steps.append(widget.step)
-        self.steps = new_steps
-
-    def edit_step(self, item: QListWidgetItem) -> None:
-        widget = self.step_list.itemWidget(item)
-        if not widget or not hasattr(widget, "step"):
-            return
-
-        step = widget.step
+    def edit_step(self, row: int) -> None:
+        step = self.steps[row]
 
         if step.step_type == StepType.create:
             dialog = CreateTableDialog(self)
@@ -371,17 +158,17 @@ class ScenarioBuilderWidget(QWidget):
                 query, additional_steps = dialog.get_data()
                 step.query = query
 
-        # Обновляем UI
-        self.update_step_list()
+        self.update_step_table()
 
     def set_scenario(self, scenario_steps: list[ScenarioStep]) -> None:
         self.steps = scenario_steps
-        self.update_step_list()
+        self.update_step_table()
         self._update_tables_info()
 
     # -------------------------------------------
     # МЕТОДЫ ДОБАВЛЕНИЯ ШАГОВ
     # -------------------------------------------
+
     def add_create_table_step(self) -> None:
         dialog = CreateTableDialog(self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
@@ -399,7 +186,7 @@ class ScenarioBuilderWidget(QWidget):
                 measure=False,
             )
             self.steps.append(step)
-            self.add_step_to_list(step)
+            self.update_step_table()
             self._update_tables_info()
 
     def add_insert_data_step(self) -> None:
@@ -415,7 +202,6 @@ class ScenarioBuilderWidget(QWidget):
                     f"Сначала нужно создать таблицу <{table_name}>!",
                 )
                 return
-
             step = InsertDataStep(
                 table_name=table_name,
                 num_records=num_records,
@@ -423,57 +209,74 @@ class ScenarioBuilderWidget(QWidget):
                 measure=False,
             )
             self.steps.append(step)
-            self.add_step_to_list(step)
+            self.update_step_table()
 
     def add_query_step(self) -> None:
         dialog = QueryDialog(parent=self)
-
         if dialog.exec() == QDialog.DialogCode.Accepted:
             query, additional_steps = dialog.get_data()
             step = QueryStep(query=query, measure=False)
-
             if additional_steps:
                 for add_step in additional_steps:
                     updated = False
                     for existing_step in self.steps:
-                        if existing_step.step_type == StepType.create and existing_step.table_name == add_step.table_name:
+                        if (
+                            existing_step.step_type == StepType.create
+                            and existing_step.table_name == add_step.table_name
+                        ):
                             existing_step.columns.update(add_step.columns)
                             updated = True
                             break
                     if not updated:
                         self.steps.append(add_step)
-                        self.add_step_to_list(add_step)
             self.steps.append(step)
-            self.add_step_to_list(step)
+            self.update_step_table()
 
-    def add_step_to_list(self, step: ScenarioStep) -> None:
-        """
-        Создаём QListWidgetItem и помещаем в него ScenarioStepItemWidget.
-        """
-        item = QListWidgetItem(self.step_list)
-        widget = ScenarioStepItemWidget(step)
-        item.setSizeHint(widget.sizeHint())
-        self.step_list.addItem(item)
-        self.step_list.setItemWidget(item, widget)
+    def update_step_table(self) -> None:
+        self.step_table.setRowCount(0)
+        for idx, step in enumerate(self.steps):
+            self.step_table.insertRow(idx)
 
-    def update_step_list(self) -> None:
-        """
-        Полная перезагрузка списка из self.steps (если понадобится).
-        """
-        self.step_list.clear()
-        for step in self.steps:
-            item = QListWidgetItem()
-            widget = ScenarioStepItemWidget(step)
-            item.setSizeHint(widget.sizeHint())
-            self.step_list.addItem(item)
-            self.step_list.setItemWidget(item, widget)
+            # Колонка "Учитывать": CheckBox
+            chk_box = QCheckBox()
+            chk_box.setChecked(step.measure)
+            chk_box.stateChanged.connect(
+                lambda state, s=step: setattr(
+                    s,
+                    "measure",
+                    state == Qt.CheckState.Checked.value,
+                ),
+            )
+            self.step_table.setCellWidget(idx, 0, chk_box)
+
+            # Колонка "Тип операции": тип шага (create, insert, query)
+            op_item = QTableWidgetItem(step.step_type.value)
+            # Сохраняем объект шага в ячейке (UserRole)
+            op_item.setData(Qt.ItemDataRole.UserRole, step)
+            self.step_table.setItem(idx, 1, op_item)
+
+            # Колонка "Доп информация": краткое описание шага
+            info_item = QTableWidgetItem(str(step))
+            self.step_table.setItem(idx, 2, info_item)
+
+            # Колонка "Удалить": кнопка удаления
+            btn_delete = QPushButton("Удалить")
+            btn_delete.clicked.connect(partial(self.delete_step_by_step, step))
+            self.step_table.setCellWidget(idx, 3, btn_delete)
+
+            # Скрытая колонка (индекс 4): храним объект шага
+            hidden_item = QTableWidgetItem()
+            hidden_item.setData(Qt.ItemDataRole.UserRole, step)
+            self.step_table.setItem(idx, 4, hidden_item)
+
+        self.step_table.resizeColumnsToContents()
+
+    def delete_step_by_step(self, step: ScenarioStep) -> None:
+        if step in self.steps:
+            self.steps.remove(step)
+            self.update_step_table()
 
     def get_scenario_steps(self):
-        """
-        Возвращает список шагов. (Перед запуском теста вызывайте reorder_steps_by_list()
-        чтобы гарантировать, что порядок актуален.)
-        """
-        self.reorder_steps_by_list()
         return self.steps
 
     def _update_tables_info(self) -> None:
@@ -485,4 +288,4 @@ class ScenarioBuilderWidget(QWidget):
     def clear(self) -> None:
         self.steps = []
         self.table_infos = {}
-        self.step_list.clear()
+        self.step_table.setRowCount(0)

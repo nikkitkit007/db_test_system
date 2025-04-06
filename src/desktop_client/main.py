@@ -15,6 +15,7 @@ from PyQt6.QtWidgets import (
 )
 
 from src.config.app_styles import style_sheet
+from src.desktop_client.ai_config import AiConfigPage, ai_config_icon_path
 from src.desktop_client.config import PageIndex
 from src.desktop_client.docker_config import DockerImagesPage, docker_image_icon_path
 from src.desktop_client.results.test_result_tab import TestResultsApp, results_icon_path
@@ -23,8 +24,9 @@ from src.desktop_client.test_conf_tab import (
     test_config_icon_path,
 )
 from src.desktop_client.test_configuration.scenario_tab import (
+    ScenarioBuilderPage,
     ScenarioPage,
-    scenario_icon_path, ScenarioBuilderPage,
+    scenario_icon_path,
 )
 
 
@@ -79,6 +81,9 @@ class MainApp(QMainWindow):
         # Дочерний пункт: «Образы Docker»
         self.docker_item = QTreeWidgetItem(self.system_item, ["Образы Docker"])
         self.docker_item.setIcon(0, QIcon(docker_image_icon_path))
+        # Дочерний пункт: «AI»
+        self.ai_item = QTreeWidgetItem(self.system_item, ["AI подключение"])
+        self.ai_item.setIcon(0, QIcon(ai_config_icon_path))
 
         # Обработка кликов по элементам
         self.nav_tree.itemClicked.connect(self.on_tree_item_clicked)
@@ -106,14 +111,19 @@ class MainApp(QMainWindow):
         self.scenario_builder_page = ScenarioBuilderPage(self.stacked_widget)
         self.test_results_app = TestResultsApp()
         self.docker_page = DockerImagesPage()
+        self.ai_page = AiConfigPage()
         self.scenario_page = ScenarioPage()
 
         # # Добавляем страницы в QStackedWidget
-        self.stacked_widget.addWidget(self.config_app)
-        self.stacked_widget.addWidget(self.scenario_builder_page)
-        self.stacked_widget.addWidget(self.test_results_app)
-        self.stacked_widget.addWidget(self.docker_page)
-        self.stacked_widget.addWidget(self.scenario_page)
+        for item in (
+            self.config_app,
+            self.scenario_builder_page,
+            self.test_results_app,
+            self.docker_page,
+            self.scenario_page,
+            self.ai_page,
+        ):
+            self.stacked_widget.addWidget(item)
 
         # Собираем всё в общий лейаут
         main_layout.addWidget(self.sidebar)
@@ -140,6 +150,8 @@ class MainApp(QMainWindow):
             self.stacked_widget.setCurrentIndex(PageIndex.scenario_page)
         elif item == self.system_item:
             pass  # По клику на «Система» ничего не делаем
+        elif item == self.ai_item:
+            self.stacked_widget.setCurrentIndex(PageIndex.ai_config_page)
         else:
             pass
 

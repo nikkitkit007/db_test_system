@@ -7,3 +7,4 @@ class PageIndex(NamedTuple):
     test_results_app = 2
     docker_page = 3
     scenario_page = 4
+    ai_config_page = 5

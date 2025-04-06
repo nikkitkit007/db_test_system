@@ -32,6 +32,7 @@ langchain-core = "^0.3.49"
 grpcio = "^1.71.0"
 grpcio-tools = "^1.71.0"
 yandexcloud = "^0.337.0"
+black = "^25.1.0"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "~0.9.3"

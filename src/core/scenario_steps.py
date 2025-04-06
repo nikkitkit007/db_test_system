@@ -22,9 +22,7 @@ class ScenarioStep(BaseModel):
     measure: bool = False
 
     def __str__(self) -> str:
-        # Отобразим во время отладки флаг measure
-        measure_flag = "[M]" if self.measure else "[ ]"
-        return f"{measure_flag} {self.step_type}"
+        return f"{self.step_type.value}"
 
 
 class CreateTableStep(ScenarioStep):
@@ -33,9 +31,10 @@ class CreateTableStep(ScenarioStep):
     columns: dict[str, DataType]
 
     def __str__(self) -> str:
-        measure_flag = "[M]" if self.measure else "[ ]"
-        columns = {col_name: data_type.value for col_name, data_type in self.columns.items()}
-        return f"{measure_flag} Создание таблицы: {self.table_name} (Колонки={columns})"
+        columns = {
+            col_name: data_type.value for col_name, data_type in self.columns.items()
+        }
+        return f"Имя таблицы: {self.table_name}. (Колонки={columns})"
 
 
 class InsertDataStep(ScenarioStep):
@@ -46,8 +45,7 @@ class InsertDataStep(ScenarioStep):
     columns: dict[str, DataType]
 
     def __str__(self) -> str:
-        measure_flag = "[M]" if self.measure else "[ ]"
-        return f"{measure_flag} Вставка данных: таблица={self.table_name}, Число записей={self.num_records}, Колонки={self.columns}"
+        return f"Имя таблицы={self.table_name}, Число записей={self.num_records}, Колонки={self.columns}"
 
 
 class QueryStep(ScenarioStep):
@@ -56,8 +54,7 @@ class QueryStep(ScenarioStep):
     query: str
 
     def __str__(self) -> str:
-        measure_flag = "[M]" if self.measure else "[ ]"
-        return f"{measure_flag} Запрос: {self.query}"
+        return f"Запрос: {self.query}"
 
 
 def deserialize_step(data: dict):
