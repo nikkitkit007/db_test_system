@@ -31,6 +31,14 @@ class DockerImage(Base):
     config = Column(Text, nullable=True)
 
 
+class AiConfig(Base):
+    __tablename__ = "ai_config"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, unique=True, nullable=False)
+    config = Column(Text, nullable=True)
+
+
 class Scenario(Base):
     __tablename__ = "scenario"
 

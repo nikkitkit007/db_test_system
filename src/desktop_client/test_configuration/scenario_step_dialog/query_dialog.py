@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (
     QTextEdit,
     QVBoxLayout,
 )
-from src.core.llm import get_tables_list
+from src.core.llm.ygpt import get_tables_list
 
 
 class SelectTableStepsDialog(QDialog):

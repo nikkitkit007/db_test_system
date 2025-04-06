@@ -4,7 +4,7 @@ from typing import Any
 from src.config.config import settings
 from src.config.log import get_logger
 from src.storage.db import SQLiteDB
-from src.storage.model import DockerImage, Scenario
+from src.storage.model import AiConfig, DockerImage, Scenario
 
 logger = get_logger(__name__)
 
@@ -54,10 +54,6 @@ class ConfigStorage(SQLiteDB):
                 raise ValueError(msg)
             return image
 
-    # -------------------------------------------------------------------------
-    # Методы для работы с ...
-    # -------------------------------------------------------------------------
-
     def add_or_update_db_config(self, name: str, config_dict: dict) -> None:
         """
         Добавляет или обновляет JSON-конфигурацию (DB_CONFIGS-подобную) для Docker-образа.
@@ -81,6 +77,10 @@ class ConfigStorage(SQLiteDB):
     def get_db_config(self, db_image_name: str) -> dict[str, Any]:
         image = self.get_image(name=db_image_name)
         return json.loads(image.config) if image.config else {}
+
+    # -------------------------------------------------------------------------
+    # Методы для работы с Scenario
+    # -------------------------------------------------------------------------
 
     def get_all_scenarios(self) -> list[Scenario]:
         with self.session_scope() as session:
@@ -124,6 +124,53 @@ class ConfigStorage(SQLiteDB):
                 raise ValueError(msg)
             session.delete(image)
             logger.info(f"Удален образ с ID: {scenario_id}")
+
+    # -------------------------------------------------------------------------
+    # Методы для работы с AI
+    # -------------------------------------------------------------------------
+
+    def get_all_ai_configs(self) -> list[AiConfig]:
+        with self.session_scope() as session:
+            return session.query(AiConfig).all()
+
+    def get_ai_config(
+        self,
+        ai_config_id: int | None = None,
+        name: str | None = None,
+    ) -> AiConfig:
+        if ai_config_id is not None:
+            query_filter = AiConfig.id == ai_config_id
+        elif name is not None:
+            query_filter = AiConfig.name == name
+        else:
+            msg = "Not filters"
+            raise Exception(msg)
+
+        with self.session_scope() as session:
+            return session.query(AiConfig).filter(query_filter).first()
+
+    def add_ai_config(self, ai_config: AiConfig) -> AiConfig:
+        with self.session_scope() as session:
+            session.add(ai_config)
+            session.flush()
+            logger.info(f"Добавлен новый конфиг: {ai_config.name}")
+            return ai_config
+
+    def update_ai_config(self, ai_config: AiConfig) -> AiConfig:
+        with self.session_scope() as session:
+            updated_ai_config = session.merge(ai_config)
+            session.flush()
+            logger.info(f"Обновлен {updated_ai_config.name}")
+            return updated_ai_config
+
+    def delete_ai_config(self, ai_config_id: int) -> None:
+        with self.session_scope() as session:
+            ai_config = session.get(AiConfig, ai_config_id)
+            if not ai_config:
+                msg = f"Конфиг с ID {ai_config_id} не найден."
+                raise ValueError(msg)
+            session.delete(ai_config)
+            logger.info(f"Удален конфиг с ID: {ai_config_id}")
 
 
 config_manager = ConfigStorage(settings.SQLITE_DB_URL)

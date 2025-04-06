@@ -12,6 +12,8 @@ from PyQt6.QtWidgets import (
 )
 
 from src.config.config import settings
+from src.storage.config_storage import config_manager
+from src.storage.model import AiConfig
 
 ai_config_icon_path = os.path.join(settings.ICONS_PATH, "docker_icon.svg")
 
@@ -28,47 +30,69 @@ class AiConfigPage(QWidget):
     def init_ui(self) -> None:
         layout = QVBoxLayout(self)
 
-        # Заголовок или инструкция (опционально)
         label_provider = QLabel("Выберите провайдера AI:")
         layout.addWidget(label_provider)
 
-        # Выпадающий список для выбора провайдера
         self.combo_provider.addItems(["OpenAI", "ygpt"])  # Добавьте при необходимости
         layout.addWidget(self.combo_provider)
 
-        # Заголовок для конфигурации (опционально)
+        self.combo_provider.currentIndexChanged.connect(self.load_ai_config)
+
         label_json = QLabel("Введите JSON-конфигурацию:")
         layout.addWidget(label_json)
 
-        # Поле для ввода JSON
         self.json_text_edit.setPlaceholderText(
-            '{\n    "api_key": "your-key-here",\n    "other_param": "value"\n}'
+            '{\n    "api_key": "your-key-here",\n    "other_param": "value"\n}',
         )
         layout.addWidget(self.json_text_edit)
-
-        # (Опциональная) Кнопка проверки JSON
-        self.btn_validate_json.clicked.connect(self.validate_json)
-        layout.addWidget(self.btn_validate_json)
 
         self.btn_save_ai_config.clicked.connect(self.save_ai_config)
         layout.addWidget(self.btn_save_ai_config)
 
-        # Устанавливаем layout
         self.setLayout(layout)
-
-    def validate_json(self) -> None:
-        """Простая проверка на валидный JSON, показываем результат в QMessageBox."""
-        text = self.json_text_edit.toPlainText().strip()
-        if not text:
-            QMessageBox.warning(self, "Предупреждение", "Поле JSON пустое.")
-            return
-        try:
-            json.loads(text)
-            QMessageBox.information(self, "Проверка", "JSON синтаксически корректен.")
-        except json.JSONDecodeError as e:
-            QMessageBox.critical(
-                self, "Ошибка JSON", f"Не удалось разобрать JSON:\n{e!s}"
-            )
+        self.load_ai_config()
 
     def save_ai_config(self):
-        ...
+        text = self.json_text_edit.toPlainText().strip()
+        self._validate_json(text)
+        ai_config = AiConfig(
+            name=self.combo_provider.currentText(),
+            config=text,
+        )
+
+        existing_config = config_manager.get_ai_config(name=ai_config.name)
+        if existing_config is None:
+            config_manager.add_ai_config(ai_config)
+        else:
+            existing_config.config = ai_config.config
+            config_manager.update_ai_config(existing_config)
+
+    def load_ai_config(self):
+        provider_name = self.combo_provider.currentText()
+        ai_config = config_manager.get_ai_config(name=provider_name)
+        if ai_config is None:
+            self.json_text_edit.setPlainText(text=None)
+            return
+        try:
+            text = json.dumps(json.loads(ai_config.config), indent=4, ensure_ascii=False)
+            self.json_text_edit.setPlainText(text)
+        except TypeError as e:
+            QMessageBox.critical(
+                self,
+                "Ошибка",
+                f"Не удалось преобразовать конфиг в JSON:\n{e!s}",
+            )
+            return
+
+    def _validate_json(self, text: str) -> None | str:
+        if not text:
+            QMessageBox.warning(self, "Предупреждение", "Поле JSON пустое.")
+            return None
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError as e:
+            QMessageBox.critical(
+                self,
+                "Ошибка JSON",
+                f"Не удалось разобрать JSON:\n{e!s}",
+            )
