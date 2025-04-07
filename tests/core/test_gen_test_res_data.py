@@ -2,8 +2,8 @@ import random
 from datetime import datetime
 from secrets import choice, randbelow
 
-from src.storage.model import TestResults
 from src.storage.db_manager.result_storage import result_manager
+from src.storage.model import TestResults
 
 
 def test_generate_test_results(num_results: int = 10) -> None:

@@ -16,6 +16,7 @@ from PyQt6.QtWidgets import (
 )
 
 from src.core.scenario_steps import (
+    ColumnDefinition,
     CreateTableStep,
     InsertDataStep,
     QueryStep,
@@ -31,11 +32,10 @@ from src.desktop_client.test_configuration.scenario_step_dialog.insert_data_dial
 from src.desktop_client.test_configuration.scenario_step_dialog.query_dialog import (
     QueryDialog,
 )
-from src.schemas.enums import DataType
 
 
 class TableInfo(BaseModel):
-    columns: dict[str, DataType]
+    columns: dict[str, ColumnDefinition]
 
 
 class DraggableTableWidget(QTableWidget):
@@ -131,11 +131,12 @@ class ScenarioBuilderWidget(QWidget):
         if step.step_type == StepType.create:
             dialog = CreateTableDialog(self)
             dialog.line_table_name.setText(step.table_name)
-            for col, typ in step.columns.items():
+            for col, col_def in step.columns.items():
                 dialog.add_column_field()
-                name_edit, type_combo = dialog.column_fields[-1]
+                name_edit, type_combo, pk_flag = dialog.column_fields[-1]
                 name_edit.setText(col)
-                index = type_combo.findText(typ)
+                index = type_combo.findText(col_def.data_type)
+                pk_flag.setChecked(col_def.primary_key)
                 if index >= 0:
                     type_combo.setCurrentIndex(index)
             if dialog.exec() == QDialog.DialogCode.Accepted:

@@ -1,4 +1,5 @@
 from PyQt6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QDialog,
     QDialogButtonBox,
@@ -10,6 +11,8 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from src.core.scenario_steps import ColumnDefinition
+from src.schemas.enums import data_type_list
 
 
 class CreateTableDialog(QDialog):
@@ -18,7 +21,9 @@ class CreateTableDialog(QDialog):
         self.setWindowTitle("Create Table Step")
         self.table_name = ""
         self.columns = {}
-        self.column_fields = []  # список для хранения полей колонок
+        self.column_fields: list[tuple[QLineEdit, QComboBox, QCheckBox]] = (
+            []
+        )  # список для хранения полей колонок
         self.line_table_name = QLineEdit()
         self.columns_layout = QVBoxLayout()
 
@@ -57,28 +62,35 @@ class CreateTableDialog(QDialog):
         col_name_edit.setPlaceholderText("Имя колонки")
 
         col_type_combo = QComboBox()
-        col_type_combo.addItems(["int", "str", "float", "bool", "date"])
+        col_type_combo.addItems(data_type_list)
+
+        pk_checkbox = QCheckBox("PK")
 
         col_layout.addWidget(QLabel("Имя:"))
         col_layout.addWidget(col_name_edit)
         col_layout.addWidget(QLabel("Тип:"))
         col_layout.addWidget(col_type_combo)
+        col_layout.addWidget(pk_checkbox)
 
         container = QWidget()
         container.setLayout(col_layout)
         self.columns_layout.addWidget(container)
 
-        self.column_fields.append((col_name_edit, col_type_combo))
+        self.column_fields.append((col_name_edit, col_type_combo, pk_checkbox))
 
     def accept(self) -> None:
         self.table_name = self.line_table_name.text().strip()
         self.columns = {}
-        for name_edit, type_combo in self.column_fields:
+        for name_edit, type_combo, pk_checkbox in self.column_fields:
             name = name_edit.text().strip()
             typ = type_combo.currentText().strip()
+            primary_key = pk_checkbox.isChecked()
             if name:
-                self.columns[name] = typ
+                self.columns[name] = ColumnDefinition(
+                    data_type=typ,
+                    primary_key=primary_key,
+                )
         super().accept()
 
-    def get_data(self):
+    def get_data(self) -> tuple[str, dict[str, ColumnDefinition]]:
         return self.table_name, self.columns

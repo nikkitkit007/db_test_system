@@ -1,11 +1,10 @@
-import random
-import secrets
 import string
 
 import numpy as np
 import pandas as pd
 
 from src.config.log import get_logger
+from src.core.scenario_steps import ColumnDefinition
 from src.schemas.enums import DataType
 
 logger = get_logger(__name__)
@@ -13,22 +12,16 @@ logger = get_logger(__name__)
 
 def generate_csv(
     num_records: int,
-    data_types: dict[str, DataType],
+    data_types: dict[str, ColumnDefinition],
     file_name: str | None = None,
 ) -> str:
     data = {
-        col: (
-            np.random.randint(0, 10000, num_records)
-            if dt_type == DataType.int else
-            np.random.uniform(0, 100000, num_records)
-            if dt_type == DataType.float else
-            np.random.choice([True, False], num_records)
-            if dt_type == DataType.bool else
-            np.full(num_records, pd.Timestamp("today").strftime("%Y-%m-%d"))
-            if dt_type == DataType.date else
-            ["".join(random.choices(string.ascii_letters, k=10)) for _ in range(num_records)]
+        col: _generate_column_values(
+            col_definition.data_type,
+            num_records,
+            col_definition.primary_key,
         )
-        for col, dt_type in data_types.items()
+        for col, col_definition in data_types.items()
     }
     df = pd.DataFrame(data)
     if not file_name:
@@ -37,3 +30,51 @@ def generate_csv(
 
     logger.info(f"CSV file {file_name} with {num_records} records generated.")
     return file_name
+
+
+def _generate_column_values(dt: str, num_records: int, unique: bool):
+    if dt == DataType.int:
+        if unique:
+            return np.random.choice(
+                np.arange(num_records + 1),
+                size=num_records,
+                replace=False,
+            )
+        return np.random.randint(0, 1000000, size=num_records)
+    if dt == DataType.float:
+        if unique:
+            return np.random.choice(
+                np.arange(num_records + 1),
+                size=num_records,
+                replace=False,
+            ).astype(np.float64)
+        return np.random.uniform(0, 1000000, size=num_records)
+    if dt == DataType.bool:
+        if unique:
+            if num_records > 2:
+                raise ValueError(
+                    "Невозможно сгенерировать более 2 уникальных булевых значений.",
+                )
+            return np.array([True, False])[:num_records]
+        return np.random.choice([True, False], size=num_records)
+    if dt == DataType.date:
+        if unique:
+            return (
+                pd.date_range(
+                    start=pd.Timestamp("today"),
+                    periods=num_records,
+                    freq="D",
+                )
+                .strftime("%Y-%m-%d")
+                .tolist()
+            )
+        return np.full(num_records, pd.Timestamp("today").strftime("%Y-%m-%d"))
+    if dt == DataType.str:
+        if unique:
+            return np.char.add("str_", np.arange(num_records).astype(str))
+        letters = np.array(list(string.ascii_letters))
+        indices = np.random.randint(0, len(letters), size=(num_records, 10))
+        return np.apply_along_axis(lambda row: "".join(row), 1, letters[indices])
+    letters = np.array(list(string.ascii_letters))
+    indices = np.random.randint(0, len(letters), size=(num_records, 10))
+    return np.apply_along_axis(lambda row: "".join(row), 1, letters[indices])

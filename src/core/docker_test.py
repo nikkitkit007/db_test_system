@@ -9,8 +9,8 @@ from src.manager.db.sql_adapter import SQLAdapter
 from src.manager.docker_manager import DockerManager
 from src.schemas.test_init import DbTestConf
 from src.storage.db_manager.docker_storage import docker_db_manager
-from src.storage.model import TestResults
 from src.storage.db_manager.result_storage import result_manager
+from src.storage.model import TestResults
 
 logger = get_logger(__name__)
 

@@ -68,7 +68,13 @@ def get_tables_list(
     try:
         create_steps: list[CreateTableStep] = llm_chain.invoke(sql_query).root or []
         return [
-            steps.CreateTableStep(table_name=step.table_name, columns=step.columns)
+            steps.CreateTableStep(
+                table_name=step.table_name,
+                columns={
+                    col: steps.ColumnDefinition(data_type=step.columns[col])
+                    for col in step.columns
+                },
+            )
             for step in create_steps
         ]
 

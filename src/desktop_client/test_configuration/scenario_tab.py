@@ -17,7 +17,7 @@ from PyQt6.QtWidgets import (
 
 from src.config.config import settings
 from src.desktop_client.test_configuration.scenario_builder import ScenarioBuilderWidget
-from src.storage.db_manager.config_storage import scenario_db_manager
+from src.storage.db_manager.scenario_storage import scenario_db_manager
 from src.storage.model import Scenario
 
 scenario_icon_path = os.path.join(settings.ICONS_PATH, "scenario.svg")

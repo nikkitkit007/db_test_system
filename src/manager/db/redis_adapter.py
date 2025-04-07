@@ -82,7 +82,10 @@ class RedisAdapter(BaseAdapter):
         table_name = create_table_step.table_name
         schema_key = f"{table_name}:schema"
         columns_str = ",".join(
-            [f"{col}:{typ}" for col, typ in create_table_step.columns.items()],
+            [
+                f"{col}:{col_def.data_type}"
+                for col, col_def in create_table_step.columns.items()
+            ],
         )
         try:
             self.client.set(schema_key, columns_str)

@@ -3,7 +3,6 @@ from typing import NamedTuple
 import src.core.llm.models.ygpt as ygpt_predictor
 from src.core.scenario_steps import CreateTableStep
 from src.storage.db_manager.ai_config_storage import ai_config_db_manager
-from src.storage.db_manager.config_storage import scenario_db_manager
 
 
 class LLM(NamedTuple):

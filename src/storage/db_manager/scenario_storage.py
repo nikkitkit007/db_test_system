@@ -7,10 +7,6 @@ logger = get_logger(__name__)
 
 
 class ScenarioStorage(SQLiteDB):
-    # -------------------------------------------------------------------------
-    # Методы для работы с Scenario
-    # -------------------------------------------------------------------------
-
     def get_all_scenarios(self) -> list[Scenario]:
         with self.session_scope() as session:
             return session.query(Scenario).all()
@@ -34,15 +30,13 @@ class ScenarioStorage(SQLiteDB):
     def add_scenario(self, scenario: Scenario) -> Scenario:
         with self.session_scope() as session:
             session.add(scenario)
-            session.flush()  # Генерирует ID новой записи
-            logger.info(f"Добавлен новый сценарий: {scenario.name}")
+            session.flush()
             return scenario
 
     def update_scenario(self, scenario: Scenario) -> Scenario:
         with self.session_scope() as session:
             updated_scenario = session.merge(scenario)
             session.flush()
-            logger.info(f"Обновлен {updated_scenario.name}")
             return updated_scenario
 
     def delete_scenario(self, scenario_id: int) -> None:
@@ -52,7 +46,6 @@ class ScenarioStorage(SQLiteDB):
                 msg = f"Образ с ID {scenario_id} не найден."
                 raise ValueError(msg)
             session.delete(image)
-            logger.info(f"Удален образ с ID: {scenario_id}")
 
 
 scenario_db_manager = ScenarioStorage(settings.SQLITE_DB_URL)

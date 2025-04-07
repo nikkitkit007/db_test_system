@@ -20,8 +20,8 @@ from src.config.config import settings
 from src.config.log import get_logger
 from src.desktop_client.config import PageIndex
 from src.desktop_client.test_runner import DockerTestRunner
-from src.storage.db_manager.config_storage import scenario_db_manager
 from src.storage.db_manager.docker_storage import docker_db_manager
+from src.storage.db_manager.scenario_storage import scenario_db_manager
 
 test_config_icon_path = os.path.join(settings.ICONS_PATH, "test_config_icon.svg")
 
@@ -130,7 +130,9 @@ class ConfigApp(QWidget):
             QMessageBox.warning(self, "Предупреждение", "Тест уже выполняется!")
             return
 
-        scenario = scenario_db_manager.get_scenario(name=self.scenario_combo.currentText())
+        scenario = scenario_db_manager.get_scenario(
+            name=self.scenario_combo.currentText(),
+        )
 
         self.thread = QThread(self)
         self.worker = DockerTestRunner(

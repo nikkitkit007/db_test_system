@@ -14,7 +14,6 @@ from PyQt6.QtWidgets import (
 from src.config.config import settings
 from src.core.llm.predictor import possible_llm
 from src.storage.db_manager.ai_config_storage import ai_config_db_manager
-from src.storage.db_manager.config_storage import scenario_db_manager
 from src.storage.model import AiConfig
 
 ai_config_icon_path = os.path.join(settings.ICONS_PATH, "ai_config_icon.svg")

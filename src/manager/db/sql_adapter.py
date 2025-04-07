@@ -118,9 +118,6 @@ class SQLAdapter(BaseAdapter):
         return False
 
     def create_table(self, create_table_step: CreateTableStep) -> None:
-        """
-        Создаёт таблицу с указанными колонками (dict column_name -> type).
-        """
         if not self.engine:
             msg = "Движок не создан. Сначала вызовите connect()."
             raise ConnectionError(msg)
@@ -129,8 +126,12 @@ class SQLAdapter(BaseAdapter):
         self.drop_table_if_exists(table_name)
 
         table_columns = (
-            Column(column_name, type_mapping[column_type.lower()])
-            for column_name, column_type in create_table_step.columns.items()
+            Column(
+                column_name,
+                type_mapping[col_def.data_type.lower()],
+                primary_key=col_def.primary_key,
+            )
+            for column_name, col_def in create_table_step.columns.items()
         )
         table = Table(
             table_name,

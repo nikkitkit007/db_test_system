@@ -1,10 +1,7 @@
-import json
-from typing import Any
-
 from src.config.config import settings
 from src.config.log import get_logger
 from src.storage.db_manager.db import SQLiteDB
-from src.storage.model import DockerImage, AiConfig
+from src.storage.model import AiConfig
 
 logger = get_logger(__name__)
 

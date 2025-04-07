@@ -1,4 +1,5 @@
 import enum
+from dataclasses import dataclass
 
 from pydantic import BaseModel, ConfigDict
 
@@ -25,16 +26,23 @@ class ScenarioStep(BaseModel):
         return f"{self.step_type.value}"
 
 
+@dataclass
+class ColumnDefinition:
+    data_type: DataType
+    primary_key: bool = False
+
+
 class CreateTableStep(ScenarioStep):
     step_type: StepType = StepType.create
     table_name: str
-    columns: dict[str, DataType]
+    columns: dict[str, ColumnDefinition]
 
     def __str__(self) -> str:
-        columns = {
-            col_name: data_type.value for col_name, data_type in self.columns.items()
+        columns_str = {
+            col_name: f"{col_def.data_type} {'(PK)' if col_def.primary_key else ''}".strip()
+            for col_name, col_def in self.columns.items()
         }
-        return f"Имя таблицы: {self.table_name}. (Колонки={columns})"
+        return f"Имя таблицы: {self.table_name}. (Колонки={columns_str})"
 
 
 class InsertDataStep(ScenarioStep):
@@ -42,10 +50,10 @@ class InsertDataStep(ScenarioStep):
 
     table_name: str
     num_records: int
-    columns: dict[str, DataType]
+    columns: dict[str, ColumnDefinition]
 
     def __str__(self) -> str:
-        return f"Имя таблицы={self.table_name}, Число записей={self.num_records}, Колонки={self.columns}"
+        return f"Имя таблицы={self.table_name}, Число записей={self.num_records}"
 
 
 class QueryStep(ScenarioStep):
