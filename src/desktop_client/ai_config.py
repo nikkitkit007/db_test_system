@@ -55,7 +55,10 @@ class AiConfigPage(QWidget):
 
     def save_ai_config(self) -> None:
         text = self.json_text_edit.toPlainText().strip()
-        self._validate_json(text)
+        valid_json = self._validate_json(text)
+        if valid_json is None:
+            return
+
         ai_config = AiConfig(
             name=self.combo_provider.currentText(),
             config=text,
@@ -101,3 +104,4 @@ class AiConfigPage(QWidget):
                 "Ошибка JSON",
                 f"Не удалось разобрать JSON:\n{e!s}",
             )
+            return None
