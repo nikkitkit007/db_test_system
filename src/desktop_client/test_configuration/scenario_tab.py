@@ -17,7 +17,7 @@ from PyQt6.QtWidgets import (
 
 from src.config.config import settings
 from src.desktop_client.test_configuration.scenario_builder import ScenarioBuilderWidget
-from src.storage.config_storage import config_manager
+from src.storage.db_manager.config_storage import scenario_db_manager
 from src.storage.model import Scenario
 
 scenario_icon_path = os.path.join(settings.ICONS_PATH, "scenario.svg")
@@ -84,7 +84,7 @@ class ScenarioPage(QWidget):
 
     def load_scenarios(self) -> None:
         """Загружает список сценариев из базы данных."""
-        scenarios = config_manager.get_all_scenarios()
+        scenarios = scenario_db_manager.get_all_scenarios()
         self.scenario_list.clear()
         for scenario in scenarios:
             self._add_scenario_to_list(scenario)
@@ -105,7 +105,7 @@ class ScenarioPage(QWidget):
 
     def load_scenario_into_builder(self, item: QListWidgetItem) -> None:
         scenario_id = item.data(Qt.ItemDataRole.UserRole)
-        scenario = config_manager.get_scenario(scenario_id)
+        scenario = scenario_db_manager.get_scenario(scenario_id)
         if scenario:
             self.scenario_name_edit.setText(scenario.name)
             self.scenario_builder_page.scenario_builder.set_scenario(
@@ -122,11 +122,11 @@ class ScenarioPage(QWidget):
 
         steps = self.scenario_builder_page.scenario_builder.get_scenario_steps()
 
-        scenario = config_manager.get_scenario(name=scenario_name)
+        scenario = scenario_db_manager.get_scenario(name=scenario_name)
         if scenario:
             # Обновляем сценарий
             scenario.set_steps(steps)
-            config_manager.update_scenario(scenario)
+            scenario_db_manager.update_scenario(scenario)
             QMessageBox.information(
                 self,
                 "Успех",
@@ -136,7 +136,7 @@ class ScenarioPage(QWidget):
             # Создаем новый сценарий
             scenario = Scenario(name=scenario_name)
             scenario.set_steps(steps)
-            config_manager.add_scenario(scenario)
+            scenario_db_manager.add_scenario(scenario)
             QMessageBox.information(
                 self,
                 "Успех",
@@ -150,7 +150,7 @@ class ScenarioPage(QWidget):
             QMessageBox.warning(self, "Ошибка", "Выберете сценарий для удаления.")
             return
 
-        config_manager.delete_scenario(
+        scenario_db_manager.delete_scenario(
             scenario_id=scenario.data(Qt.ItemDataRole.UserRole),
         )
         self.scenario_list.takeItem(self.scenario_list.row(scenario))

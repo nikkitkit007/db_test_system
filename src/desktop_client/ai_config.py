@@ -13,7 +13,8 @@ from PyQt6.QtWidgets import (
 
 from src.config.config import settings
 from src.core.llm.predictor import possible_llm
-from src.storage.config_storage import config_manager
+from src.storage.db_manager.ai_config_storage import ai_config_db_manager
+from src.storage.db_manager.config_storage import scenario_db_manager
 from src.storage.model import AiConfig
 
 ai_config_icon_path = os.path.join(settings.ICONS_PATH, "ai_config_icon.svg")
@@ -64,16 +65,16 @@ class AiConfigPage(QWidget):
             config=text,
         )
 
-        existing_config = config_manager.get_ai_config(name=ai_config.name)
+        existing_config = ai_config_db_manager.get_ai_config(name=ai_config.name)
         if existing_config is None:
-            config_manager.add_ai_config(ai_config)
+            ai_config_db_manager.add_ai_config(ai_config)
         else:
             existing_config.config = ai_config.config
-            config_manager.update_ai_config(existing_config)
+            ai_config_db_manager.update_ai_config(existing_config)
 
     def load_ai_config(self) -> None:
         provider_name = self.combo_provider.currentText()
-        ai_config = config_manager.get_ai_config(name=provider_name)
+        ai_config = ai_config_db_manager.get_ai_config(name=provider_name)
         if ai_config is None:
             self.json_text_edit.setPlainText(text=None)
             return

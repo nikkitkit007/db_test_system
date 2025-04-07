@@ -19,7 +19,7 @@ from PyQt6.QtWidgets import (
 
 from src.config.config import settings
 from src.desktop_client.image_config_editor_dialog import ConfigEditorDialog
-from src.storage.config_storage import config_manager
+from src.storage.db_manager.docker_storage import docker_db_manager
 from src.storage.model import DockerImage
 
 docker_image_icon_path = os.path.join(settings.ICONS_PATH, "docker_icon.svg")
@@ -89,7 +89,7 @@ class DockerImagesPage(QWidget):
         self.edit_config_button.clicked.connect(self.edit_docker_config)
 
     def load_docker_images(self) -> None:
-        docker_images = config_manager.get_all_docker_images()
+        docker_images = docker_db_manager.get_all_docker_images()
         self.docker_list.clear()
         for image in docker_images:
             self._add_image_to_list(image)
@@ -101,7 +101,7 @@ class DockerImagesPage(QWidget):
 
     def display_container_info(self, item) -> None:
         container_name = item.text()
-        image_config = config_manager.get_db_config(container_name)
+        image_config = docker_db_manager.get_db_config(container_name)
         info_text = json.dumps(
             image_config,
             indent=4,
@@ -116,7 +116,7 @@ class DockerImagesPage(QWidget):
         if not new_image:
             QMessageBox.warning(self, "Ошибка", "Введите имя образа.")
             return
-        image = config_manager.add_docker_image(DockerImage(name=new_image))
+        image = docker_db_manager.add_docker_image(DockerImage(name=new_image))
         self._add_image_to_list(image)
         QMessageBox.information(
             self,
@@ -129,7 +129,7 @@ class DockerImagesPage(QWidget):
         if not selected_item:
             QMessageBox.warning(self, "Ошибка", "Выберите образ для удаления.")
             return
-        config_manager.delete_docker_image(
+        docker_db_manager.delete_docker_image(
             image_id=selected_item.data(Qt.ItemDataRole.UserRole),
         )
         self.docker_list.takeItem(self.docker_list.row(selected_item))
@@ -149,7 +149,7 @@ class DockerImagesPage(QWidget):
             QMessageBox.warning(self, "Ошибка", "Не выбран образ для редактирования.")
             return
 
-        config_dict = config_manager.get_db_config(selected_image_name)
+        config_dict = docker_db_manager.get_db_config(selected_image_name)
 
         # Создаём и отображаем диалог
         dialog = ConfigEditorDialog(
@@ -159,7 +159,7 @@ class DockerImagesPage(QWidget):
         )
         if dialog.exec():  # Если пользователь нажал "Сохранить"
             new_config = dialog.get_config_dict()
-            config_manager.add_or_update_db_config(selected_image_name, new_config)
+            docker_db_manager.add_or_update_db_config(selected_image_name, new_config)
             QMessageBox.information(
                 self,
                 "Успех",

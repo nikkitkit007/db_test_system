@@ -20,7 +20,7 @@ from PyQt6.QtWidgets import (
 
 from src.config.config import settings
 from src.desktop_client.results.visualizer import TestResultsVisualizer
-from src.storage.result_storage import result_manager
+from src.storage.db_manager.result_storage import result_manager
 
 results_icon_path = os.path.join(settings.ICONS_PATH, "results_icon.svg")
 

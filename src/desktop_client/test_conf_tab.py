@@ -20,7 +20,8 @@ from src.config.config import settings
 from src.config.log import get_logger
 from src.desktop_client.config import PageIndex
 from src.desktop_client.test_runner import DockerTestRunner
-from src.storage.config_storage import config_manager
+from src.storage.db_manager.config_storage import scenario_db_manager
+from src.storage.db_manager.docker_storage import docker_db_manager
 
 test_config_icon_path = os.path.join(settings.ICONS_PATH, "test_config_icon.svg")
 
@@ -105,13 +106,13 @@ class ConfigApp(QWidget):
 
     def load_docker_images(self) -> None:
         """Загружает образы Docker из базы данных в выпадающий список."""
-        docker_images = config_manager.get_all_docker_images()
+        docker_images = docker_db_manager.get_all_docker_images()
         self.db_image_combo.clear()
         for image in docker_images:
             self.db_image_combo.addItem(image.name)
 
     def load_scenarios(self) -> None:
-        scenarios = config_manager.get_all_scenarios()
+        scenarios = scenario_db_manager.get_all_scenarios()
         self.scenario_combo.clear()
         for scenario in scenarios:
             self.scenario_combo.addItem(scenario.name)
@@ -129,7 +130,7 @@ class ConfigApp(QWidget):
             QMessageBox.warning(self, "Предупреждение", "Тест уже выполняется!")
             return
 
-        scenario = config_manager.get_scenario(name=self.scenario_combo.currentText())
+        scenario = scenario_db_manager.get_scenario(name=self.scenario_combo.currentText())
 
         self.thread = QThread(self)
         self.worker = DockerTestRunner(

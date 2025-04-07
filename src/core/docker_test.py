@@ -1,3 +1,4 @@
+import re
 import time
 
 from src.config.log import get_logger
@@ -7,12 +8,9 @@ from src.manager.db.redis_adapter import RedisAdapter
 from src.manager.db.sql_adapter import SQLAdapter
 from src.manager.docker_manager import DockerManager
 from src.schemas.test_init import DbTestConf
-from src.storage.config_storage import config_manager
+from src.storage.db_manager.docker_storage import docker_db_manager
 from src.storage.model import TestResults
-from src.storage.result_storage import result_manager
-from src.utils import (
-    clear_container_name,
-)
+from src.storage.db_manager.result_storage import result_manager
 
 logger = get_logger(__name__)
 
@@ -25,7 +23,7 @@ def run_test(db_test_conf: DbTestConf) -> None:
     # Инициализируем менеджер Docker
     docker_manager = DockerManager()
     db_image = db_test_conf.db_image
-    config = config_manager.get_db_config(db_image)
+    config = docker_db_manager.get_db_config(db_image)
 
     # Подтягиваем Docker-образ (если отсутствует локально — docker pull)
     docker_manager.pull_image(db_image)
@@ -33,7 +31,7 @@ def run_test(db_test_conf: DbTestConf) -> None:
     # Получаем конфигурацию для данного образа (порт, тип БД и т. д.)
 
     # Формируем имя контейнера, переменные окружения, порты и т. д.
-    container_name = f"{clear_container_name(db_image)}_test"
+    container_name = f"{_clear_container_name(db_image)}_test"
     environment = config.get("env", {})
     exposed_port = config["port"]
     ports = {exposed_port: exposed_port}  # Проброс порта 1:1
@@ -126,3 +124,7 @@ def _execute_step(adapter: BaseAdapter, step: ScenarioStep) -> None:
     else:
         msg = f"Неизвестный шаг: {type(step).__name__}"
         raise NotImplementedError(msg)
+
+
+def _clear_container_name(name: str) -> str:
+    return re.sub(r"[^a-zA-Z0-9._-]", "_", name)

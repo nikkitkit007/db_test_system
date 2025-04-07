@@ -7,7 +7,7 @@ import redis
 from src.config.log import get_logger
 from src.core.scenario_steps import CreateTableStep, InsertDataStep, QueryStep
 from src.manager.db.base_adapter import BaseAdapter
-from src.utils import generate_csv
+from src.manager.db.utils import generate_csv
 
 logger = get_logger(__name__)
 
