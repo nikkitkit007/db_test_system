@@ -17,7 +17,11 @@ from PyQt6.QtWidgets import (
 )
 
 from src.config.config import settings
-from src.desktop_client.results.visualizer import TestResultsVisualizer
+from src.desktop_client.results.visualizer import (
+    Diagram,
+    TestResultsVisualizer,
+    diagrams,
+)
 from src.storage.db_manager.result_storage import result_manager
 
 results_icon_path = os.path.join(settings.ICONS_PATH, "results_icon.svg")
@@ -108,9 +112,7 @@ class TestResultsApp(QWidget):
         visualization_layout = QHBoxLayout()
 
         self.visualization_type = QComboBox()
-        self.visualization_type.addItems(
-            ["Время выполнения", "Распределение операций", "Количество записей"],
-        )
+        self.visualization_type.addItems(diagrams)
         visualization_layout.addWidget(self.visualization_type)
 
         self.visualize_button = QPushButton("Визуализировать")
@@ -272,9 +274,9 @@ class TestResultsApp(QWidget):
             return
 
         vis_type = self.visualization_type.currentText()
-        if vis_type == "Время выполнения":
-            self.visualizer.plot_execution_time(results)
-        elif vis_type == "Распределение операций":
-            self.visualizer.plot_operation_distribution(results)
-        elif vis_type == "Количество записей":
-            self.visualizer.plot_record_count_distribution(results)
+        if vis_type == Diagram.RESOURCE_USAGE_BY_DB.value:
+            self.visualizer.plot_resource_usage_by_db(results)
+        elif vis_type == Diagram.RECORDS_VS_EXECUTION_TIME.value:
+            self.visualizer.plot_records_vs_execution_time(results)
+        elif vis_type == Diagram.EXECUTION_TIME_DISTRIBUTION.value:
+            self.visualizer.plot_execution_time_distribution(results)
