@@ -8,8 +8,6 @@ from PyQt6.QtWidgets import (
     QGroupBox,
     QHBoxLayout,
     QLabel,
-    QListWidget,
-    QListWidgetItem,
     QMessageBox,
     QPushButton,
     QTableWidget,
@@ -29,7 +27,7 @@ class TestResultsApp(QWidget):
     def __init__(self) -> None:
         super().__init__()
         self.initUI()
-        # Загрузим в фильтры уникальные значения db_image и operation
+        # Загрузим уникальные значения для фильтров
         self.load_filter_values()
         self.visualizer = TestResultsVisualizer()
         # Сразу загрузим результаты (без фильтров)
@@ -40,7 +38,7 @@ class TestResultsApp(QWidget):
         self.refresh_timer.start()
 
     def initUI(self) -> None:
-        """Создаёт интерфейс вкладки «Test Results» с фильтрами, списком и визуализацией."""
+        """Создаёт интерфейс вкладки «Test Results» с фильтрами, таблицей и визуализацией."""
         main_layout = QVBoxLayout()
         QFont("Arial", 14)
 
@@ -52,7 +50,6 @@ class TestResultsApp(QWidget):
         self.db_image_label = QLabel("Docker образ:")
         self.db_image_filter_combo = QComboBox()
         self.db_image_filter_combo.addItem("Все", "")
-
         filter_layout.addWidget(self.db_image_label)
         filter_layout.addWidget(self.db_image_filter_combo)
 
@@ -60,7 +57,6 @@ class TestResultsApp(QWidget):
         self.operation_label = QLabel("Операция:")
         self.operation_filter_combo = QComboBox()
         self.operation_filter_combo.addItem("Все", "")
-
         filter_layout.addWidget(self.operation_label)
         filter_layout.addWidget(self.operation_filter_combo)
 
@@ -72,30 +68,19 @@ class TestResultsApp(QWidget):
         filter_group.setLayout(filter_layout)
         main_layout.addWidget(filter_group)
 
-        # === Группа «Результаты тестирования» ===
+        # === Группа «Результаты тестирования» (используется таблица) ===
         results_group = QGroupBox("Результаты тестирования")
         results_layout = QVBoxLayout()
 
-        # Список результатов
-        self.results_list = QListWidget()
-        self.results_list.setSelectionMode(
+        self.results_table = QTableWidget()
+        self.results_table.setSelectionBehavior(
+            QAbstractItemView.SelectionBehavior.SelectRows,
+        )
+        self.results_table.setSelectionMode(
             QAbstractItemView.SelectionMode.ExtendedSelection,
         )
-        self.results_list.itemClicked.connect(self.display_result_details)
-        results_layout.addWidget(self.results_list)
-
-        # Кнопка удаления
-        self.delete_button = QPushButton("Удалить результат(ы)")
-        self.delete_button.clicked.connect(self.delete_selected_results)
-        results_layout.addWidget(self.delete_button)
-
-        results_group.setLayout(results_layout)
-        main_layout.addWidget(results_group)
-
-        # === Таблица с деталями выбранного результата ===
-        self.details_table = QTableWidget()
-        self.details_table.setColumnCount(7)
-        self.details_table.setHorizontalHeaderLabels(
+        self.results_table.setColumnCount(7)
+        self.results_table.setHorizontalHeaderLabels(
             [
                 "Timestamp",
                 "DB Image",
@@ -106,7 +91,18 @@ class TestResultsApp(QWidget):
                 "Memory",
             ],
         )
-        main_layout.addWidget(self.details_table)
+        self.results_table.setSelectionBehavior(
+            QTableWidget.SelectionBehavior.SelectRows,
+        )
+        results_layout.addWidget(self.results_table)
+
+        # Кнопка удаления
+        self.delete_button = QPushButton("Удалить результат(ы)")
+        self.delete_button.clicked.connect(self.delete_selected_results)
+        results_layout.addWidget(self.delete_button)
+
+        results_group.setLayout(results_layout)
+        main_layout.addWidget(results_group)
 
         # === Блок управления визуализацией ===
         visualization_layout = QHBoxLayout()
@@ -132,7 +128,6 @@ class TestResultsApp(QWidget):
         Заполняет комбобоксы уникальными значениями db_image и operation,
         чтобы пользователь мог выбирать фильтры.
         """
-
         for dbi in result_manager.get_distinct_db_images():
             self.db_image_filter_combo.addItem(dbi, dbi)
 
@@ -140,7 +135,6 @@ class TestResultsApp(QWidget):
             self.operation_filter_combo.addItem(operator, operator)
 
     def get_results(self) -> None:
-
         self.load_results(
             db_image=self.db_image_filter_combo.currentData(),
             operation=self.operation_filter_combo.currentData(),
@@ -154,50 +148,45 @@ class TestResultsApp(QWidget):
         db_image: str | None = None,
         operation: str | None = None,
     ) -> None:
-        self.results_list.clear()
         results = result_manager.select_all_results(
             db_image=db_image,
             operation=operation,
         )
-        for result in results:
-            item_text = f"ID: {result.id}, Timestamp: {result.timestamp}"
-            item = QListWidgetItem(item_text)
-            item.setData(Qt.ItemDataRole.UserRole, result.id)
-            self.results_list.addItem(item)
-
-        self.details_table.setRowCount(0)
-
-    def display_result_details(self, item: QListWidgetItem) -> None:
-        """Отображает детали выбранного результата теста."""
-        if not item:
-            return
-
-        result_id = item.data(Qt.ItemDataRole.UserRole)
-        result = result_manager.select_result_by_id(result_id)
-
-        self.details_table.setRowCount(0)
-        if result:
-            self.details_table.setRowCount(1)
-            self.details_table.setItem(0, 0, QTableWidgetItem(result.timestamp))
-            self.details_table.setItem(0, 1, QTableWidgetItem(result.db_image))
-            self.details_table.setItem(0, 2, QTableWidgetItem(result.operation))
-            self.details_table.setItem(0, 3, QTableWidgetItem(str(result.num_records)))
-            self.details_table.setItem(0, 4, QTableWidgetItem(result.step_description))
-            self.details_table.setItem(
-                0,
+        # Обновляем таблицу
+        self.results_table.setRowCount(0)
+        self.results_table.setRowCount(len(results))
+        for row, result in enumerate(results):
+            # Создаём ячейку для Timestamp и сохраняем result.id в данных ячейки
+            item_timestamp = QTableWidgetItem(result.timestamp)
+            item_timestamp.setData(Qt.ItemDataRole.UserRole, result.id)
+            self.results_table.setItem(row, 0, item_timestamp)
+            self.results_table.setItem(row, 1, QTableWidgetItem(result.db_image))
+            self.results_table.setItem(row, 2, QTableWidgetItem(result.operation))
+            self.results_table.setItem(
+                row,
+                3,
+                QTableWidgetItem(str(result.num_records)),
+            )
+            self.results_table.setItem(
+                row,
+                4,
+                QTableWidgetItem(result.step_description),
+            )
+            self.results_table.setItem(
+                row,
                 5,
                 QTableWidgetItem(f"{result.execution_time:.2f}"),
             )
-            self.details_table.setItem(
-                0,
+            self.results_table.setItem(
+                row,
                 6,
                 QTableWidgetItem(f"{result.memory_used:.2f}"),
             )
 
     def delete_selected_results(self) -> None:
-        """Удаляет выбранные результаты из БД и обновляет список."""
-        selected_items = self.results_list.selectedItems()
-        if not selected_items:
+        """Удаляет выбранные результаты из БД и обновляет таблицу."""
+        selected_indexes = self.results_table.selectionModel().selectedRows()
+        if not selected_indexes:
             QMessageBox.warning(self, "Ошибка", "Выберите результат(ы) для удаления.")
             return
 
@@ -209,25 +198,28 @@ class TestResultsApp(QWidget):
         )
 
         if reply == QMessageBox.StandardButton.Yes:
-            for item in selected_items:
-                result_id = item.data(Qt.ItemDataRole.UserRole)
+            for model_index in selected_indexes:
+                row = model_index.row()
+                result_id = self.results_table.item(row, 0).data(
+                    Qt.ItemDataRole.UserRole,
+                )
                 result_manager.delete_result(result_id)
             self.get_results()
-            self.details_table.setRowCount(0)
 
     def on_timer_refresh(self) -> None:
         """
-        Каждые 5 секунд обновляем список результатов,
-        используя текущие фильтры, восстанавливая выделение и детали, если возможно.
+        Каждые 5 секунд обновляем таблицу результатов,
+        используя текущие фильтры и восстанавливая выделенные строки.
         """
-        # 1) Запоминаем, какие элементы сейчас выбраны в results_list, чтобы восстановить
-        selected_ids = [
-            item.data(Qt.ItemDataRole.UserRole)
-            for item in self.results_list.selectedItems()
-        ]
+        # Сохраняем id выбранных результатов
+        selected_ids = []
+        for model_index in self.results_table.selectionModel().selectedRows():
+            row = model_index.row()
+            item = self.results_table.item(row, 0)
+            if item:
+                selected_ids.append(item.data(Qt.ItemDataRole.UserRole))
 
-        # 2) Сохраняем выбранные значения (Data) из combobox'ов,
-        #    чтобы их тоже восстановить после обновления
+        # Сохраняем выбранные значения фильтров
         old_db_image_data = self.db_image_filter_combo.currentData()
         old_operation_data = self.operation_filter_combo.currentData()
 
@@ -235,15 +227,12 @@ class TestResultsApp(QWidget):
         self.db_image_filter_combo.blockSignals(True)
         self.db_image_filter_combo.clear()
         self.db_image_filter_combo.addItem("Все", "")
-
         for dbi in result_manager.get_distinct_db_images():
             self.db_image_filter_combo.addItem(dbi, dbi)
-
         index_db_image = self.db_image_filter_combo.findData(old_db_image_data)
         if index_db_image >= 0:
             self.db_image_filter_combo.setCurrentIndex(index_db_image)
         else:
-            # Если старого значения нет в списке, по умолчанию "Все"
             self.db_image_filter_combo.setCurrentIndex(0)
         self.db_image_filter_combo.blockSignals(False)
 
@@ -251,10 +240,8 @@ class TestResultsApp(QWidget):
         self.operation_filter_combo.blockSignals(True)
         self.operation_filter_combo.clear()
         self.operation_filter_combo.addItem("Все", "")
-
         for op in result_manager.get_distinct_operations():
             self.operation_filter_combo.addItem(op, op)
-
         index_op = self.operation_filter_combo.findData(old_operation_data)
         if index_op >= 0:
             self.operation_filter_combo.setCurrentIndex(index_op)
@@ -262,34 +249,17 @@ class TestResultsApp(QWidget):
             self.operation_filter_combo.setCurrentIndex(0)
         self.operation_filter_combo.blockSignals(False)
 
-        # 3) Теперь обновляем список результатов на основе восстановленных фильтров
-        self.get_results()  # внутри get_results() вызывается load_results() → перезаполняется self.results_list
+        # Обновляем таблицу с результатами
+        self.get_results()
 
-        # 4) Восстанавливаем выделение в списке (если id всё ещё в данных)
-        if selected_ids:
-            # После обновления results_list, ищем новые QListWidgetItem, совпадающие по ID
-            for i in range(self.results_list.count()):
-                item = self.results_list.item(i)
-                if item.data(Qt.ItemDataRole.UserRole) in selected_ids:
-                    item.setSelected(True)
-
-            # Если только 1 элемент был выбран — восстанавливаем таблицу деталей
-            if len(selected_ids) == 1:
-                single_id = selected_ids[0]
-                # Находим item с таким ID и вызываем display_result_details
-                for i in range(self.results_list.count()):
-                    item = self.results_list.item(i)
-                    if item.data(Qt.ItemDataRole.UserRole) == single_id:
-                        self.display_result_details(item)
-                        break
-            else:
-                # Если было несколько — таблицу деталей пусть заполняется при клике,
-                # или можно решить иначе.
-                pass
+        # Восстанавливаем выделение строк по сохранённым id
+        for row in range(self.results_table.rowCount()):
+            item = self.results_table.item(row, 0)
+            if item and (item.data(Qt.ItemDataRole.UserRole) in selected_ids):
+                self.results_table.selectRow(row)
 
     def visualize_results(self) -> None:
         """Визуализирует данные на основе выбранного типа визуализации."""
-        # Можно брать текущие фильтры, чтобы визуализировать только отфильтрованные результаты
         db_image_filter = self.db_image_filter_combo.currentData()
         operation_filter = self.operation_filter_combo.currentData()
 
