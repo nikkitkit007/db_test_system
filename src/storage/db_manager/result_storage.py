@@ -25,6 +25,8 @@ class ResultStorage(SQLiteDB):
         self,
         db_image: str | None = None,
         operation: str | None = None,
+        sort: str | None = None,
+        order: str | None = None,
     ) -> list[TestResults]:
         with self.session_scope() as session:
             query = select(TestResults)
@@ -32,6 +34,16 @@ class ResultStorage(SQLiteDB):
                 query = query.where(TestResults.db_image == db_image)
             if operation:
                 query = query.where(TestResults.operation == operation)
+
+            if sort:
+                sort_col = getattr(TestResults, sort, None)
+                if sort_col is not None:
+                    if order and order.lower() == "desc":
+                        query = query.order_by(sort_col.desc())
+                    else:
+                        query = query.order_by(sort_col.asc())
+            else:
+                query = query.order_by(TestResults.timestamp.desc())
             return session.scalars(query).all()
 
     def select_result_by_id(self, result_id: int) -> TestResults:

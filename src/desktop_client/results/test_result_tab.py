@@ -35,7 +35,7 @@ class TestResultsApp(QWidget):
         self.load_filter_values()
         self.visualizer = TestResultsVisualizer()
         # Сразу загрузим результаты (без фильтров)
-        self.load_results()
+        self.get_results()
         self.refresh_timer = QTimer(self)
         self.refresh_timer.setInterval(5000)
         self.refresh_timer.timeout.connect(self.on_timer_refresh)

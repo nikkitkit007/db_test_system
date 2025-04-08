@@ -85,8 +85,6 @@ class TestResultsVisualizer:
         """
         records = []
         exec_times = []
-        # Можно также добавить дополнительную окраску для разных образов БД или типов операций,
-        # но для простоты здесь строится один график.
         for res in results:
             if res.num_records is not None and res.execution_time is not None:
                 records.append(res.num_records)
