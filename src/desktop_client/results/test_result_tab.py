@@ -31,10 +31,8 @@ class TestResultsApp(QWidget):
     def __init__(self) -> None:
         super().__init__()
         self.initUI()
-        # Загрузим уникальные значения для фильтров
-        self.load_filter_values()
+        self.load_possible_filter_key_values()
         self.visualizer = TestResultsVisualizer()
-        # Сразу загрузим результаты (без фильтров)
         self.get_results()
         self.refresh_timer = QTimer(self)
         self.refresh_timer.setInterval(5000)
@@ -83,7 +81,7 @@ class TestResultsApp(QWidget):
         self.results_table.setSelectionMode(
             QAbstractItemView.SelectionMode.ExtendedSelection,
         )
-        self.results_table.setColumnCount(7)
+        self.results_table.setColumnCount(8)
         self.results_table.setHorizontalHeaderLabels(
             [
                 "Timestamp",
@@ -93,6 +91,7 @@ class TestResultsApp(QWidget):
                 "Test info",
                 "Exec Time",
                 "Memory",
+                "CPU %",
             ],
         )
         self.results_table.setSelectionBehavior(
@@ -125,7 +124,7 @@ class TestResultsApp(QWidget):
     # ---------------------------------------------------------------------
     # Методы для фильтрации
     # ---------------------------------------------------------------------
-    def load_filter_values(self) -> None:
+    def load_possible_filter_key_values(self) -> None:
         """
         Заполняет комбобоксы уникальными значениями db_image и operation,
         чтобы пользователь мог выбирать фильтры.
@@ -184,9 +183,10 @@ class TestResultsApp(QWidget):
                 6,
                 QTableWidgetItem(f"{result.memory_used:.2f}"),
             )
+            self.results_table.setItem(row, 7, QTableWidgetItem(f"{result.cpu_percent:.2f}"))
+
 
     def delete_selected_results(self) -> None:
-        """Удаляет выбранные результаты из БД и обновляет таблицу."""
         selected_indexes = self.results_table.selectionModel().selectedRows()
         if not selected_indexes:
             QMessageBox.warning(self, "Ошибка", "Выберите результат(ы) для удаления.")
