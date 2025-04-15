@@ -10,16 +10,23 @@ logger = get_logger(__name__)
 
 class DockerTestRunner(QObject):
     finished = pyqtSignal()
+    error = pyqtSignal(str)
 
     def __init__(
         self,
-        db_image,
+        db_image: str,
         scenario_steps: list[ScenarioStep],
+        host: str = None,
+        port: int = None,
+        use_existing: bool = False,
         parent=None,
     ) -> None:
         super().__init__(parent)
         self.db_image = db_image
         self.scenario_steps = scenario_steps
+        self.host = host
+        self.port = port
+        self.use_existing = use_existing
 
     @pyqtSlot()
     def run(self) -> None:

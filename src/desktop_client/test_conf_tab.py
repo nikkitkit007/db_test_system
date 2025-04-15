@@ -6,10 +6,12 @@ from PyQt6.QtWidgets import (
     QComboBox,
     QGridLayout,
     QGroupBox,
+    QHBoxLayout,
     QLabel,
     QLineEdit,
     QMessageBox,
     QPushButton,
+    QRadioButton,
     QSpinBox,
     QStackedWidget,
     QVBoxLayout,
@@ -42,6 +44,18 @@ class ConfigApp(QWidget):
         self.data_types_edit = QLineEdit()
         self.stacked_widget: QStackedWidget | None = None
 
+        # Добавляем радиокнопки для выбора типа подключения
+        self.create_new_db_radio = QRadioButton("Создать новую БД")
+        self.connect_existing_db_radio = QRadioButton("Подключиться к существующей БД")
+        self.create_new_db_radio.setChecked(True)  # По умолчанию создаем новую
+
+        # Поля для подключения к существующей БД
+        self.host_label = QLabel("Хост:")
+        self.host_edit = QLineEdit()
+        self.host_edit.setText("localhost")
+        self.port_label = QLabel("Порт:")
+        self.port_edit = QLineEdit()
+
         self.add_image_button = QPushButton("Добавить новый образ")
         self.add_scenario_button = QPushButton("Добавить новый сценарий")
         self.start_button = QPushButton("Запустить тест")
@@ -68,9 +82,22 @@ class ConfigApp(QWidget):
 
         self.add_image_button.clicked.connect(self.open_docker_config_builder)
 
-        docker_layout.addWidget(self.db_image_label, 0, 0)
-        docker_layout.addWidget(self.db_image_combo, 0, 1)
-        docker_layout.addWidget(self.add_image_button, 0, 2)
+        # Радиокнопки для выбора типа подключения
+        radio_layout = QHBoxLayout()
+        radio_layout.addWidget(self.create_new_db_radio)
+        radio_layout.addWidget(self.connect_existing_db_radio)
+        docker_layout.addLayout(radio_layout, 0, 0, 1, 3)
+
+        # Поля для выбора образа и подключения
+        docker_layout.addWidget(self.db_image_label, 1, 0)
+        docker_layout.addWidget(self.db_image_combo, 1, 1)
+        docker_layout.addWidget(self.add_image_button, 1, 2)
+
+        # Поля для подключения к существующей БД
+        docker_layout.addWidget(self.host_label, 2, 0)
+        docker_layout.addWidget(self.host_edit, 2, 1, 1, 2)
+        docker_layout.addWidget(self.port_label, 3, 0)
+        docker_layout.addWidget(self.port_edit, 3, 1, 1, 2)
 
         layout.addWidget(docker_group)
 
@@ -138,6 +165,17 @@ class ConfigApp(QWidget):
         self.worker = DockerTestRunner(
             db_image=self.db_image_combo.currentText(),
             scenario_steps=scenario.get_steps(),
+            host=(
+                self.host_edit.text()
+                if self.connect_existing_db_radio.isChecked()
+                else None
+            ),
+            port=(
+                int(self.port_edit.text())
+                if self.connect_existing_db_radio.isChecked() and self.port_edit.text()
+                else None
+            ),
+            use_existing=self.connect_existing_db_radio.isChecked(),
             parent=None,
         )
         self.worker.moveToThread(self.thread)
@@ -146,6 +184,7 @@ class ConfigApp(QWidget):
         self.worker.finished.connect(self.thread.quit)
         self.worker.finished.connect(self.worker.deleteLater)
         self.thread.finished.connect(self.thread.deleteLater)
+        self.worker.error.connect(lambda msg: QMessageBox.critical(self, "Ошибка", msg))
 
         self.worker.finished.connect(self.on_test_finished)
         self.thread.start()

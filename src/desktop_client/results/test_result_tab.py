@@ -183,8 +183,11 @@ class TestResultsApp(QWidget):
                 6,
                 QTableWidgetItem(f"{result.memory_used:.2f}"),
             )
-            self.results_table.setItem(row, 7, QTableWidgetItem(f"{result.cpu_percent:.2f}"))
-
+            self.results_table.setItem(
+                row,
+                7,
+                QTableWidgetItem(f"{result.cpu_percent:.2f}"),
+            )
 
     def delete_selected_results(self) -> None:
         selected_indexes = self.results_table.selectionModel().selectedRows()
