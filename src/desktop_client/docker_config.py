@@ -7,13 +7,15 @@ from PyQt6.QtWidgets import (
     QDialog,
     QGroupBox,
     QHBoxLayout,
+    QInputDialog,
+    QLineEdit,
     QMessageBox,
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
     QTextEdit,
     QVBoxLayout,
-    QWidget, QLineEdit, QInputDialog,
+    QWidget,
 )
 
 from src.config.config import settings
@@ -60,10 +62,12 @@ class DockerImagesPage(QWidget):
         containers_layout = QVBoxLayout()
         self.docker_table.setColumnCount(4)
         self.docker_table.setHorizontalHeaderLabels(
-            ["Конфиг", "Образ", "Создан", "Обновлен"]
+            ["Конфиг", "Образ", "Создан", "Обновлен"],
         )
         self.docker_table.horizontalHeader().setStretchLastSection(True)
-        self.docker_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.docker_table.setSelectionBehavior(
+            QTableWidget.SelectionBehavior.SelectRows,
+        )
         self.docker_table.setSelectionMode(QTableWidget.SelectionMode.ExtendedSelection)
         self.docker_table.itemSelectionChanged.connect(self.display_container_info)
         self.docker_table.itemDoubleClicked.connect(self.on_table_double_click)
@@ -98,9 +102,9 @@ class DockerImagesPage(QWidget):
             QMessageBox.critical(self, "Ошибка", f"Ошибка при загрузке образов: {e}")
 
     def _add_image_to_table(
-            self,
-            image: DockerImage | dict,
-            item_type: Literal["existing", "scanned"] = "existing",
+        self,
+        image: DockerImage | dict,
+        item_type: Literal["existing", "scanned"] = "existing",
     ) -> None:
         """Добавляет в таблицу либо сохранённый образ, либо просканированный контейнер."""
         row = self.docker_table.rowCount()
@@ -144,7 +148,7 @@ class DockerImagesPage(QWidget):
                 "Имя конфигурации",
                 "Введите уникальное имя конфига:",
                 QLineEdit.EchoMode.Normal,
-                f"{image_name.replace('/', '_')}_cfg"
+                f"{image_name.replace('/', '_')}_cfg",
             )
             if not ok or not config_name.strip():
                 return
@@ -173,9 +177,11 @@ class DockerImagesPage(QWidget):
             raw = docker_image.config or {}
             cfg = json.loads(raw) if isinstance(raw, str) else raw
 
-            dialog = ConfigEditorDialog(self,
-                                        image_name=docker_image.image_name,
-                                        config_dict=cfg)
+            dialog = ConfigEditorDialog(
+                self,
+                image_name=docker_image.image_name,
+                config_dict=cfg,
+            )
             if dialog.exec() == QDialog.DialogCode.Accepted:
                 new_cfg = dialog.get_config()
                 docker_image.config = json.dumps(new_cfg)
@@ -218,7 +224,7 @@ class DockerImagesPage(QWidget):
                 }
 
             self.connection_info.setText(
-                json.dumps(info, indent=4, ensure_ascii=False, sort_keys=True)
+                json.dumps(info, indent=4, ensure_ascii=False, sort_keys=True),
             )
 
         except Exception as e:
@@ -230,7 +236,7 @@ class DockerImagesPage(QWidget):
             self,
             "Новый образ",
             "Введите имя Docker‑образа (например nginx:latest):",
-            QLineEdit.EchoMode.Normal
+            QLineEdit.EchoMode.Normal,
         )
         if not ok or not image_name.strip():
             return
@@ -241,7 +247,7 @@ class DockerImagesPage(QWidget):
             "Имя конфигурации",
             "Введите уникальное имя конфига:",
             QLineEdit.EchoMode.Normal,
-            f"{image_name.replace('/', '_')}_cfg"
+            f"{image_name.replace('/', '_')}_cfg",
         )
         if not ok2 or not config_name.strip():
             return
@@ -283,7 +289,11 @@ class DockerImagesPage(QWidget):
                 try:
                     docker_db_manager.delete_docker_image(data)
                 except Exception as e:
-                    QMessageBox.critical(self, "Ошибка", f"Не удалось удалить из БД: {e}")
+                    QMessageBox.critical(
+                        self,
+                        "Ошибка",
+                        f"Не удалось удалить из БД: {e}",
+                    )
                     continue
             self.docker_table.removeRow(row)
 
@@ -293,8 +303,16 @@ class DockerImagesPage(QWidget):
         if dialog.exec() == QDialog.DialogCode.Accepted:
             selected = dialog.selected_containers()
             if not selected:
-                QMessageBox.information(self, "Нечего добавлять", "Отметьте контейнеры.")
+                QMessageBox.information(
+                    self,
+                    "Нечего добавлять",
+                    "Отметьте контейнеры.",
+                )
                 return
             for c in selected:
                 self._add_image_to_table(c, item_type="scanned")
-            QMessageBox.information(self, "Готово", f"Добавлено {len(selected)} контейнеров.")
+            QMessageBox.information(
+                self,
+                "Готово",
+                f"Добавлено {len(selected)} контейнеров.",
+            )
