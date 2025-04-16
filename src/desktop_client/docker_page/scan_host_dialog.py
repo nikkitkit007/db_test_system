@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
-    QWidget,
+    QWidget, QMessageBox,
 )
 
 
@@ -26,6 +26,8 @@ class ScanHostDialog(QDialog):
         host_layout = QHBoxLayout()
         host_layout.addWidget(QLabel("Хост (tcp://host:port):"))
         self.host_edit = QLineEdit()
+        self.host_edit.setText("tcp://localhost:2375")
+
         host_layout.addWidget(self.host_edit)
         self.scan_btn = QPushButton("Сканировать")
         host_layout.addWidget(self.scan_btn)
