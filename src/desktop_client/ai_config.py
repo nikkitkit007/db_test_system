@@ -75,7 +75,7 @@ class AiConfigPage(QWidget):
         provider_name = self.combo_provider.currentText()
         ai_config = ai_config_db_manager.get_ai_config(name=provider_name)
         if ai_config is None:
-            self.json_text_edit.setPlainText(text=None)
+            self.json_text_edit.setPlainText("")
             return
         try:
             text = json.dumps(

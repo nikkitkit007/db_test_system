@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (
 from src.desktop_client.main import MainApp
 
 
-def start_app():
+def start_app() -> None:
     app = QApplication(sys.argv)
     main_app = MainApp()
     main_app.show()

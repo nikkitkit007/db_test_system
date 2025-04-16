@@ -48,8 +48,7 @@ class ResultStorage(SQLiteDB):
 
     def select_result_by_id(self, result_id: int) -> TestResults:
         with self.session_scope() as session:
-            result = session.get(TestResults, result_id)
-            return result
+            return session.get(TestResults, result_id)
 
     def get_distinct_db_images(self):
         with self.session_scope() as session:

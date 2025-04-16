@@ -52,8 +52,9 @@ def _generate_column_values(dt: str, num_records: int, unique: bool):
     if dt == DataType.bool:
         if unique:
             if num_records > 2:
+                msg = "Невозможно сгенерировать более 2 уникальных булевых значений."
                 raise ValueError(
-                    "Невозможно сгенерировать более 2 уникальных булевых значений.",
+                    msg,
                 )
             return np.array([True, False])[:num_records]
         return np.random.choice([True, False], size=num_records)

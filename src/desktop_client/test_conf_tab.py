@@ -136,7 +136,7 @@ class ConfigApp(QWidget):
         docker_images = docker_db_manager.get_all_docker_images()
         self.db_image_combo.clear()
         for image in docker_images:
-            self.db_image_combo.addItem(image.name)
+            self.db_image_combo.addItem(image.image_name)
 
     def load_scenarios(self) -> None:
         scenarios = scenario_db_manager.get_all_scenarios()

@@ -8,6 +8,7 @@ from docker.models.containers import Container
 from docker.models.images import Image
 
 from src.config.log import get_logger
+from src.schemas.test_init import DockerHostConfig
 
 logger = get_logger(__name__)
 
@@ -24,8 +25,53 @@ class PeakStats:
 
 
 class DockerManager:
-    def __init__(self) -> None:
-        self.client = docker.from_env()
+    def __init__(self, host_config: DockerHostConfig | None = None, **kwargs) -> None:
+        """
+        Инициализация DockerManager.
+
+        :param host_config: Конфигурация для подключения к Docker хосту
+        :param kwargs: Дополнительные параметры для docker.from_env()
+        """
+        self._host_config = host_config
+        try:
+            if host_config and host_config.base_url:
+                # Создаем конфигурацию TLS если нужно
+                tls_config = None
+                if all(
+                    [
+                        host_config.tls_ca_cert,
+                        host_config.tls_client_cert,
+                        host_config.tls_client_key,
+                    ],
+                ):
+                    tls_config = docker.tls.TLSConfig(
+                        ca_cert=host_config.tls_ca_cert,
+                        client_cert=(
+                            host_config.tls_client_cert,
+                            host_config.tls_client_key,
+                        ),
+                        verify=host_config.tls_verify,
+                    )
+
+                # Подключение к удаленному хосту
+                self.client = docker.DockerClient(
+                    base_url=host_config.base_url,
+                    tls=tls_config,
+                    version=host_config.version,
+                    timeout=host_config.timeout,
+                )
+            else:
+                # Подключение к локальному хосту
+                self.client = docker.from_env(**kwargs)
+
+            # Проверяем подключение
+            self.client.ping()
+            logger.info("Успешное подключение к Docker daemon")
+
+        except docker.errors.DockerException as e:
+            logger.exception(f"Ошибка при подключении к Docker daemon: {e}")
+            raise
+
         self.container_name = None
         self.container = None
         self._stop_event = threading.Event()
@@ -227,3 +273,77 @@ class DockerManager:
         msg = f"Контейнер {container.name} не готов в течение {timeout} секунд."
         logger.error(msg)
         raise TimeoutError(msg)
+
+    def get_host(self) -> str:
+        """
+        Возвращает хост для подключения к БД.
+        Если используется удаленный Docker, возвращает хост из base_url.
+        В противном случае возвращает 'localhost'.
+        """
+        if (
+            hasattr(self, "_host_config")
+            and self._host_config
+            and self._host_config.base_url
+        ):
+            # Если используется удаленный Docker, берем хост из base_url
+            return self._host_config.base_url.split("://")[1].split(":")[0]
+        return "localhost"
+
+    def scan_host_containers(self) -> list[dict]:
+        """
+        Сканирует хост и возвращает информацию о всех контейнерах.
+
+        :return: Список словарей с информацией о контейнерах
+        """
+        try:
+            containers = self.client.containers.list(all=True)
+            container_info = []
+
+            for container in containers:
+                container_info.append(
+                    {
+                        "id": container.id,
+                        "name": container.name,
+                        "status": container.status,
+                        "image": (
+                            container.image.tags[0]
+                            if container.image.tags
+                            else "untagged"
+                        ),
+                        "ports": container.ports,
+                        "created": container.attrs["Created"],
+                        "state": container.attrs["State"],
+                        "labels": container.labels,
+                    },
+                )
+
+            return container_info
+        except DockerException as e:
+            logger.exception(f"Ошибка при сканировании контейнеров: {e}")
+            return []
+
+    def connect_to_container(self, container_id_or_name: str) -> bool:
+        """
+        Подключается к существующему контейнеру.
+
+        :param container_id_or_name: ID или имя контейнера
+        :return: True если подключение успешно, False в противном случае
+        """
+        try:
+            container = self.client.containers.get(container_id_or_name)
+            if container.status != "running":
+                logger.warning(f"Контейнер {container_id_or_name} не запущен")
+                return False
+
+            self.container = container
+            self.container_name = container.name
+            logger.info(f"Успешно подключено к контейнеру {container_id_or_name}")
+            return True
+        except NotFound:
+            logger.exception(f"Контейнер {container_id_or_name} не найден")
+            return False
+        except DockerException as e:
+            logger.exception(
+                f"Ошибка при подключении к контейнеру {container_id_or_name}: {e}",
+            )
+            return False

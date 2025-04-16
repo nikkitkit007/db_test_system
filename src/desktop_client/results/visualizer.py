@@ -15,7 +15,7 @@ diagrams = [diagram.value for diagram in Diagram]
 
 class TestResultsVisualizer:
     @staticmethod
-    def plot_resource_usage_by_db(results):
+    def plot_resource_usage_by_db(results) -> None:
         """
         Строит столбчатую диаграмму, показывающую среднее потребление памяти и CPU для каждого образа БД.
         """
@@ -41,8 +41,8 @@ class TestResultsVisualizer:
         width = 0.35
 
         fig, ax = plt.subplots(figsize=(10, 6))
-        rects1 = ax.bar(ind - width / 2, avg_memory, width, label="Memory (MB)")
-        rects2 = ax.bar(ind + width / 2, avg_cpu, width, label="CPU (%)")
+        ax.bar(ind - width / 2, avg_memory, width, label="Memory (MB)")
+        ax.bar(ind + width / 2, avg_cpu, width, label="CPU (%)")
 
         ax.set_ylabel("Среднее значение")
         ax.set_title("Потребление памяти и CPU по образам БД")
@@ -54,7 +54,7 @@ class TestResultsVisualizer:
         plt.show()
 
     @staticmethod
-    def plot_execution_time_distribution(results):
+    def plot_execution_time_distribution(results) -> None:
         """
         Строит ящичковую диаграмму (boxplot) распределения времени выполнения для каждой операции.
         """
@@ -79,7 +79,7 @@ class TestResultsVisualizer:
         plt.show()
 
     @staticmethod
-    def plot_records_vs_execution_time(results):
+    def plot_records_vs_execution_time(results) -> None:
         """
         Строит scatter plot для анализа зависимости времени выполнения от количества записей.
         """
@@ -91,7 +91,7 @@ class TestResultsVisualizer:
                 exec_times.append(res.execution_time)
 
         fig, ax = plt.subplots(figsize=(10, 6))
-        scatter = ax.scatter(records, exec_times, alpha=0.7)
+        ax.scatter(records, exec_times, alpha=0.7)
         ax.set_xlabel("Количество записей")
         ax.set_ylabel("Время выполнения (сек)")
         ax.set_title("Зависимость времени выполнения от количества записей")

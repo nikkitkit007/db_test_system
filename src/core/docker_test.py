@@ -1,13 +1,15 @@
 import re
 import time
 
+import docker.tls
+
 from src.config.log import get_logger
 from src.core.scenario_steps import ScenarioStep, StepType
 from src.manager.db.base_adapter import BaseAdapter
 from src.manager.db.redis_adapter import RedisAdapter
 from src.manager.db.sql_adapter import SQLAdapter
 from src.manager.docker_manager import DockerManager
-from src.schemas.test_init import DbTestConf
+from src.schemas.test_init import DbTestConf, DockerHostConfig
 from src.storage.db_manager.docker_storage import docker_db_manager
 from src.storage.db_manager.result_storage import result_manager
 from src.storage.model import TestResults
@@ -15,13 +17,39 @@ from src.storage.model import TestResults
 logger = get_logger(__name__)
 
 
+def _create_tls_config(host_config: DockerHostConfig) -> docker.tls.TLSConfig | None:
+    """Создает конфигурацию TLS для Docker клиента."""
+    if not all(
+        [
+            host_config.tls_ca_cert,
+            host_config.tls_client_cert,
+            host_config.tls_client_key,
+        ],
+    ):
+        return None
+
+    return docker.tls.TLSConfig(
+        ca_cert=host_config.tls_ca_cert,
+        client_cert=(host_config.tls_client_cert, host_config.tls_client_key),
+        verify=host_config.tls_verify,
+    )
+
+
 def run_test(db_test_conf: DbTestConf) -> None:
     """
     Основной метод для запуска теста
     """
+    # Создаем конфигурацию TLS если нужно
+    tls_config = None
+    if db_test_conf.docker_host:
+        tls_config = _create_tls_config(db_test_conf.docker_host)
 
-    # Инициализируем менеджер Docker
-    docker_manager = DockerManager()
+    # Инициализируем менеджер Docker с учетом конфигурации хоста
+    docker_manager = DockerManager(
+        host_config=db_test_conf.docker_host,
+        tls_config=tls_config,
+    )
+
     db_image = db_test_conf.db_image
     config = docker_db_manager.get_db_config(db_image)
 
@@ -35,6 +63,9 @@ def run_test(db_test_conf: DbTestConf) -> None:
     environment = config.get("env", {})
     exposed_port = config["port"]
     ports = {exposed_port: exposed_port}  # Проброс порта 1:1
+
+    # Определяем хост для подключения к БД
+    db_host = docker_manager.get_host()
 
     # 1) Запускаем контейнер ( detach=True внутри run_container )
     docker_manager.run_container(
@@ -53,13 +84,13 @@ def run_test(db_test_conf: DbTestConf) -> None:
             driver=config.get("driver"),
             username=config.get("user"),
             password=config.get("password"),
-            host="localhost",
+            host=db_host,
             port=exposed_port,
             db_name=config.get("db"),
         )
     elif db_type == "redis":
         adapter = RedisAdapter(
-            host="localhost",
+            host=db_host,
             port=exposed_port,
             password=config.get("password"),
             db=0,

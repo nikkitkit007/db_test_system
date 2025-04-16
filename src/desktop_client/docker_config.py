@@ -1,23 +1,23 @@
 import json
 import os
+from typing import Literal
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
-    QGridLayout,
+    QDialog,
     QGroupBox,
     QHBoxLayout,
-    QLabel,
-    QLineEdit,
-    QListWidget,
-    QListWidgetItem,
     QMessageBox,
     QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
     QTextEdit,
     QVBoxLayout,
-    QWidget,
+    QWidget, QLineEdit, QInputDialog,
 )
 
 from src.config.config import settings
+from src.desktop_client.docker_page.scan_host_dialog import ScanHostDialog
 from src.desktop_client.image_config_editor_dialog import ConfigEditorDialog
 from src.storage.db_manager.docker_storage import docker_db_manager
 from src.storage.model import DockerImage
@@ -27,141 +27,218 @@ docker_image_icon_path = os.path.join(settings.ICONS_PATH, "docker_icon.svg")
 
 class DockerImagesPage(QWidget):
     """
-    Страница с отображением всех Docker-образов и информацией о выбранном контейнере.
+    Страница с отображением всех Docker‑образов и панелью конфигурации.
     """
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
-        self.docker_list: QListWidget = QListWidget()
-        self.container_info = QTextEdit()
-        self.custom_image_edit = QLineEdit()
+        # Основные виджеты
+        self.docker_table = QTableWidget()
+        self.connection_info = QTextEdit()
 
-        self.add_image_button = QPushButton("Добавить")
-        self.delete_image_button = QPushButton("Удалить")
-        self.edit_config_button = QPushButton("Редактировать")
+        # Кнопки тулбара
+        self.add_config_button = QPushButton("Добавить образ")
+        self.scan_host_button = QPushButton("Сканировать хост")
+        self.delete_config_button = QPushButton("Удалить конфиг(и)")
 
         self.initUI()
+        self.load_docker_images()
 
     def initUI(self) -> None:
-        main_layout = QHBoxLayout(self)  # Разделение списка и информации
+        main_layout = QVBoxLayout(self)
 
-        # 🔹 Левая часть – список Docker-образов
-        self.docker_list.itemClicked.connect(
-            self.display_container_info,
-        )  # Обработчик клика
-        self.load_docker_images()  # Заполняем список образами
-        main_layout.addWidget(self.docker_list, 2)  # Занимает 2 части от 3
+        # ─── Панель инструментов ───
+        toolbar = QHBoxLayout()
+        toolbar.addWidget(self.add_config_button)
+        toolbar.addStretch(1)
+        toolbar.addWidget(self.scan_host_button)
+        toolbar.addWidget(self.delete_config_button)
+        main_layout.addLayout(toolbar)
 
-        # 🔹 Правая часть – Информация о выбранном контейнере
-        right_panel = QVBoxLayout()
+        # ─── Список образов ───
+        containers_group = QGroupBox("Список контейнеров")
+        containers_layout = QVBoxLayout()
+        self.docker_table.setColumnCount(4)
+        self.docker_table.setHorizontalHeaderLabels(
+            ["Конфиг", "Образ", "Создан", "Обновлен"]
+        )
+        self.docker_table.horizontalHeader().setStretchLastSection(True)
+        self.docker_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.docker_table.setSelectionMode(QTableWidget.SelectionMode.ExtendedSelection)
+        self.docker_table.itemSelectionChanged.connect(self.display_container_info)
+        containers_layout.addWidget(self.docker_table)
+        containers_group.setLayout(containers_layout)
+        main_layout.addWidget(containers_group, 2)
 
-        # Группа информации
-        details_group = QGroupBox("Информация о контейнере")
-        details_layout = QVBoxLayout()
-
-        self.container_info.setReadOnly(True)
-        details_layout.addWidget(self.container_info)
-
-        details_group.setLayout(details_layout)
-        right_panel.addWidget(details_group)
-
-        # 🔹 Панель управления образами (кнопки)
-        manage_group = QGroupBox("Управление образами")
-        manage_layout = QGridLayout()
-
-        self.custom_image_edit.setPlaceholderText("custom/image:tag")
-
-        manage_layout.addWidget(QLabel("Добавить новый образ:"), 0, 0)
-        manage_layout.addWidget(self.custom_image_edit, 0, 1)
-        manage_layout.addWidget(self.add_image_button, 1, 0)
-        manage_layout.addWidget(self.delete_image_button, 1, 1)
-        manage_layout.addWidget(self.edit_config_button, 2, 0, 1, 2)
-
-        manage_group.setLayout(manage_layout)
-        right_panel.addWidget(manage_group)
-
-        main_layout.addLayout(right_panel, 3)  # Правая панель занимает 3 части от 5
+        # ─── Информация / Конфигурация ───
+        config_group = QGroupBox("Информация / Конфигурация")
+        config_layout = QVBoxLayout()
+        self.connection_info.setReadOnly(True)
+        config_layout.addWidget(self.connection_info)
+        config_group.setLayout(config_layout)
+        main_layout.addWidget(config_group, 3)
 
         self.setLayout(main_layout)
 
-        self.add_image_button.clicked.connect(self.add_docker_image)
-        self.delete_image_button.clicked.connect(self.delete_docker_image)
-        self.edit_config_button.clicked.connect(self.edit_docker_config)
+        # ─── Сигналы ───
+        self.add_config_button.clicked.connect(self.add_docker_image)
+        self.scan_host_button.clicked.connect(self.open_scan_dialog)
+        self.delete_config_button.clicked.connect(self.delete_selected_config)
 
     def load_docker_images(self) -> None:
-        docker_images = docker_db_manager.get_all_docker_images()
-        self.docker_list.clear()
-        for image in docker_images:
-            self._add_image_to_list(image)
+        """Загружает все сохранённые Docker‑образы из БД."""
+        try:
+            images = docker_db_manager.get_all_docker_images()
+            self.docker_table.setRowCount(0)
+            for img in images:
+                self._add_image_to_table(img, item_type="existing")
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Ошибка при загрузке образов: {e}")
 
-    def _add_image_to_list(self, image: DockerImage) -> None:
-        item = QListWidgetItem(image.name)
-        item.setData(Qt.ItemDataRole.UserRole, image.id)
-        self.docker_list.addItem(item)
+    def _add_image_to_table(
+            self,
+            image: DockerImage | dict,
+            item_type: Literal["existing", "scanned"] = "existing",
+    ) -> None:
+        """Добавляет в таблицу либо сохранённый образ, либо просканированный контейнер."""
+        row = self.docker_table.rowCount()
+        self.docker_table.insertRow(row)
 
-    def display_container_info(self, item) -> None:
-        container_name = item.text()
-        image_config = docker_db_manager.get_db_config(container_name)
-        info_text = json.dumps(
-            image_config,
-            indent=4,
-            ensure_ascii=False,
-            sort_keys=True,
-        )
+        if isinstance(image, DockerImage):
+            # сохранённый образ
+            cfg_item = QTableWidgetItem(image.config_name)
+            name_item = QTableWidgetItem(image.image_name)
+            created_item = QTableWidgetItem(str(image.created_at))
+            updated_item = QTableWidgetItem(str(image.updated_at))
+            data = image.id
+        else:
+            # просканированный контейнер
+            cfg_item = QTableWidgetItem("-")
+            name_item = QTableWidgetItem(image["name"])
+            created_item = QTableWidgetItem(image.get("created", ""))
+            updated_item = QTableWidgetItem("-")
+            data = image
 
-        self.container_info.setText(info_text)
+        for col, item in enumerate([cfg_item, name_item, created_item, updated_item]):
+            item.setData(Qt.ItemDataRole.UserRole, data)
+            # визуальный маркер для сканированных
+            if item_type == "scanned":
+                item.setBackground(Qt.GlobalColor.lightGray)
+            self.docker_table.setItem(row, col, item)
+
+    def display_container_info(self) -> None:
+        """Показывает детали выбранного образа или контейнера."""
+        try:
+            items = self.docker_table.selectedItems()
+            if not items:
+                self.connection_info.clear()
+                return
+
+            data = items[0].data(Qt.ItemDataRole.UserRole)
+            if isinstance(data, dict):
+                # просканированный контейнер
+                info = {
+                    "Имя": data.get("name", ""),
+                    "ID": data.get("id", ""),
+                    "Образ": data.get("image", ""),
+                    "Команда": data.get("command", ""),
+                    "Создан": data.get("created", ""),
+                    "Порты": data.get("ports", ""),
+                    "Состояние": data.get("state", ""),
+                }
+            else:
+                # сохранённый образ
+                img = docker_db_manager.get_image(config_name=items[0].text())
+                raw = img.config or {}
+                cfg = json.loads(raw) if isinstance(raw, str) else raw
+                info = {
+                    "db_type": cfg.get("db_type", ""),
+                    "driver": cfg.get("driver", ""),
+                    "user": cfg.get("user", ""),
+                    "password": cfg.get("password", ""),
+                    "port": cfg.get("port", ""),
+                    "db": cfg.get("db", ""),
+                    "env": cfg.get("env", {}),
+                }
+
+            self.connection_info.setText(
+                json.dumps(info, indent=4, ensure_ascii=False, sort_keys=True)
+            )
+
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Ошибка отображения: {e}")
 
     def add_docker_image(self) -> None:
-        new_image = self.custom_image_edit.text().strip()
-        if not new_image:
-            QMessageBox.warning(self, "Ошибка", "Введите имя образа.")
-            return
-        image = docker_db_manager.add_docker_image(DockerImage(name=new_image))
-        self._add_image_to_list(image)
-        QMessageBox.information(
+        """Добавляет новый образ: запрашиваем имя, открываем редактор конфига."""
+        image_name, ok = QInputDialog.getText(
             self,
-            "Добавлено",
-            f"Образ {new_image} успешно добавлен.",
+            "Новый образ",
+            "Введите имя Docker‑образа (например nginx:latest):",
+            QLineEdit.EchoMode.Normal
         )
-
-    def delete_docker_image(self) -> None:
-        selected_item = self.docker_list.currentItem()
-        if not selected_item:
-            QMessageBox.warning(self, "Ошибка", "Выберите образ для удаления.")
-            return
-        docker_db_manager.delete_docker_image(
-            image_id=selected_item.data(Qt.ItemDataRole.UserRole),
-        )
-        self.docker_list.takeItem(self.docker_list.row(selected_item))
-        QMessageBox.information(
-            self,
-            "Удалено",
-            f"Образ {selected_item.text()} удален.",
-        )
-
-    def edit_docker_config(self) -> None:
-        """
-        Открывает диалоговое окно для редактирования конфигурации
-        текущего выбранного Docker-образа.
-        """
-        selected_image_name = self.docker_list.currentItem().text()
-        if not selected_image_name:
-            QMessageBox.warning(self, "Ошибка", "Не выбран образ для редактирования.")
+        if not ok or not image_name.strip():
             return
 
-        config_dict = docker_db_manager.get_db_config(selected_image_name)
-
-        # Создаём и отображаем диалог
-        dialog = ConfigEditorDialog(
+        # Генерим предложенное имя конфига
+        config_name, ok2 = QInputDialog.getText(
             self,
-            image_name=selected_image_name,
-            config_dict=config_dict,
+            "Имя конфигурации",
+            "Введите уникальное имя конфига:",
+            QLineEdit.EchoMode.Normal,
+            f"{image_name.replace('/', '_')}_cfg"
         )
-        if dialog.exec():  # Если пользователь нажал "Сохранить"
-            new_config = dialog.get_config_dict()
-            docker_db_manager.add_or_update_db_config(selected_image_name, new_config)
-            QMessageBox.information(
-                self,
-                "Успех",
-                f"Конфигурация для {selected_image_name} обновлена.",
+        if not ok2 or not config_name.strip():
+            return
+
+        # Открываем редактор для заполнения полей
+        dialog = ConfigEditorDialog(self, image_name=image_name, config_dict={})
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            cfg = dialog.get_config()
+            docker_image = DockerImage(
+                image_name=image_name,
+                config_name=config_name,
+                config=json.dumps(cfg),
             )
+            docker_db_manager.add_docker_image(docker_image)
+            self.load_docker_images()
+
+    def delete_selected_config(self) -> None:
+        """Массовое удаление выбранных строк и конфига в БД для сохранённых."""
+        selected = self.docker_table.selectionModel().selectedRows()
+        if not selected:
+            QMessageBox.warning(self, "Ошибка", "Выберите строку(и) для удаления.")
+            return
+
+        reply = QMessageBox.question(
+            self,
+            "Подтверждение",
+            "Удалить выбранные записи?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
+        # делаем в обратном порядке, чтобы индексы не съехали
+        for idx in sorted(selected, key=lambda mi: mi.row(), reverse=True):
+            row = idx.row()
+            item = self.docker_table.item(row, 0)
+            data = item.data(Qt.ItemDataRole.UserRole)
+            if isinstance(data, int):
+                try:
+                    docker_db_manager.delete_docker_image(data)
+                except Exception as e:
+                    QMessageBox.critical(self, "Ошибка", f"Не удалось удалить из БД: {e}")
+                    continue
+            self.docker_table.removeRow(row)
+
+    def open_scan_dialog(self) -> None:
+        """Открывает диалог сканирования и добавляет выбранные контейнеры."""
+        dialog = ScanHostDialog(self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            selected = dialog.selected_containers()
+            if not selected:
+                QMessageBox.information(self, "Нечего добавлять", "Отметьте контейнеры.")
+                return
+            for c in selected:
+                self._add_image_to_table(c, item_type="scanned")
+            QMessageBox.information(self, "Готово", f"Добавлено {len(selected)} контейнеров.")

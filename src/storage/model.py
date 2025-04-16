@@ -32,13 +32,17 @@ class DockerImage(Base):
     config_name = Column(String, unique=True, nullable=False)
     config = Column(Text, nullable=True)
     created_at = Column(
-        DateTime, nullable=False, default=lambda: datetime.datetime.now(datetime.UTC)
+        DateTime,
+        nullable=False,
+        default=lambda: datetime.datetime.now(datetime.UTC),
     )
     updated_at = Column(
-        DateTime, nullable=False, default=lambda: datetime.datetime.now(datetime.UTC)
+        DateTime,
+        nullable=False,
+        default=lambda: datetime.datetime.now(datetime.UTC),
     )
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.created_at = datetime.datetime.now(datetime.UTC)
         self.updated_at = datetime.datetime.now(datetime.UTC)

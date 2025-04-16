@@ -120,6 +120,6 @@ class ConfigEditorDialog(QDialog):
 
         self.accept()  # Закрываем диалог с результатом Accepted
 
-    def get_config_dict(self):
+    def get_config(self) -> dict:
         """Возвращает итоговый config, который собрали из полей."""
         return self.edited_config

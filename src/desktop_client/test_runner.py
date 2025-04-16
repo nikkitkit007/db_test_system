@@ -16,8 +16,8 @@ class DockerTestRunner(QObject):
         self,
         db_image: str,
         scenario_steps: list[ScenarioStep],
-        host: str = None,
-        port: int = None,
+        host: str | None = None,
+        port: int | None = None,
         use_existing: bool = False,
         parent=None,
     ) -> None:

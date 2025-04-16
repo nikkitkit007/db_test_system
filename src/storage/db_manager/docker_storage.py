@@ -1,3 +1,4 @@
+import datetime
 import json
 from typing import Any
 
@@ -29,11 +30,15 @@ class DockerStorage(SQLiteDB):
                 raise ValueError(msg)
             session.delete(image)
 
-    def get_image(self, image_id: int | None = None, name: str | None = None):
+    def get_image(
+        self,
+        image_id: int | None = None,
+        config_name: str | None = None,
+    ) -> DockerImage:
         if image_id is not None:
             query_filter = DockerImage.id == image_id
-        elif name is not None:
-            query_filter = DockerImage.name == name
+        elif config_name is not None:
+            query_filter = DockerImage.config_name == config_name
         else:
             msg = "Not filters"
             raise Exception(msg)
@@ -41,33 +46,49 @@ class DockerStorage(SQLiteDB):
         with self.session_scope() as session:
             image = session.query(DockerImage).filter(query_filter).first()
             if not image:
-                msg = f"Образ с именем '{name}' не найден."
+                msg = f"Образ с именем конфигурации '{config_name}' не найден."
                 raise ValueError(msg)
             return image
 
-    def add_or_update_db_config(self, name: str, config_dict: dict) -> None:
-        """
-        Добавляет или обновляет JSON-конфигурацию (DB_CONFIGS-подобную) для Docker-образа.
-        :param name: название Docker-образа
-        :param config_dict: словарь вида:
-            {
-              "db_type": "...",
-              "default_user": "...",
-              "default_password": "...",
-              "default_port": 1234,
-              "default_db": "...",
-              "env": {...},
-              ...
-            }
-        """
+    def add_or_update_db_config(self, config_name: str, config_dict: dict) -> None:
         with self.session_scope() as session:
-            image = session.query(DockerImage).filter(DockerImage.name == name).first()
+            image = (
+                session.query(DockerImage)
+                .filter(DockerImage.config_name == config_name)
+                .first()
+            )
+            if not image:
+                msg = f"Образ с именем конфигурации '{config_name}' не найден."
+                raise ValueError(
+                    msg,
+                )
             image.config = json.dumps(config_dict)
-            logger.info(f"Обновлен config у Docker-образа '{name}'.")
+            image.updated_at = datetime.datetime.now(datetime.UTC)
+            logger.info(f"Обновлен config у Docker-образа '{config_name}'.")
 
-    def get_db_config(self, db_image_name: str) -> dict[str, Any]:
-        image = self.get_image(name=db_image_name)
+    def get_db_config(self, config_name: str) -> dict[str, Any]:
+        image = self.get_image(config_name=config_name)
         return json.loads(image.config) if image.config else {}
+
+    def update_docker_image(self, docker_image: DockerImage) -> DockerImage:
+        """Обновляет существующий Docker-образ в базе данных."""
+        with self.session_scope() as session:
+            existing = session.get(DockerImage, docker_image.id)
+            if not existing:
+                msg = f"Образ с ID {docker_image.id} не найден."
+                raise ValueError(msg)
+            # Обновляем поля
+            existing.image_name = docker_image.image_name
+            existing.config_name = docker_image.config_name
+            # Если config передан как dict, приводим к JSON
+            if isinstance(docker_image.config, dict):
+                existing.config = json.dumps(docker_image.config)
+            else:
+                existing.config = docker_image.config
+            existing.updated_at = datetime.datetime.now(datetime.UTC)
+            session.flush()
+            logger.info(f"Обновлен Docker-образ с ID {docker_image.id}.")
+            return existing
 
 
 docker_db_manager = DockerStorage(settings.SQLITE_DB_URL)
