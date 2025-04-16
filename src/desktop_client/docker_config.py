@@ -66,6 +66,8 @@ class DockerImagesPage(QWidget):
         self.docker_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.docker_table.setSelectionMode(QTableWidget.SelectionMode.ExtendedSelection)
         self.docker_table.itemSelectionChanged.connect(self.display_container_info)
+        self.docker_table.itemDoubleClicked.connect(self.on_table_double_click)
+
         containers_layout.addWidget(self.docker_table)
         containers_group.setLayout(containers_layout)
         main_layout.addWidget(containers_group, 2)
@@ -125,6 +127,60 @@ class DockerImagesPage(QWidget):
             if item_type == "scanned":
                 item.setBackground(Qt.GlobalColor.lightGray)
             self.docker_table.setItem(row, col, item)
+
+    def on_table_double_click(self, item: QTableWidgetItem) -> None:
+        """При двойном клике открываем редактор конфига."""
+        row = item.row()
+        # Вытащим UserRole из первой колонки
+        data = self.docker_table.item(row, 0).data(Qt.ItemDataRole.UserRole)
+
+        if isinstance(data, dict):
+            # Просканированный контейнер: сначала сохраняем его как новый образ
+            container = data
+            image_name = container.get("image", "")
+            # Запрос уникального имени конфига
+            config_name, ok = QInputDialog.getText(
+                self,
+                "Имя конфигурации",
+                "Введите уникальное имя конфига:",
+                QLineEdit.EchoMode.Normal,
+                f"{image_name.replace('/', '_')}_cfg"
+            )
+            if not ok or not config_name.strip():
+                return
+
+            # Запускаем редактор на пустом конфиге
+            dialog = ConfigEditorDialog(self, image_name=image_name, config_dict={})
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                cfg = dialog.get_config()
+                docker_image = DockerImage(
+                    image_name=image_name,
+                    config_name=config_name,
+                    config=json.dumps(cfg),
+                )
+                docker_db_manager.add_docker_image(docker_image)
+                self.load_docker_images()
+
+        else:
+            # Существующий образ — редактируем его конфиг
+            config_name = self.docker_table.item(row, 0).text()
+            try:
+                docker_image = docker_db_manager.get_image(config_name=config_name)
+            except Exception as e:
+                QMessageBox.warning(self, "Ошибка", str(e))
+                return
+
+            raw = docker_image.config or {}
+            cfg = json.loads(raw) if isinstance(raw, str) else raw
+
+            dialog = ConfigEditorDialog(self,
+                                        image_name=docker_image.image_name,
+                                        config_dict=cfg)
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                new_cfg = dialog.get_config()
+                docker_image.config = json.dumps(new_cfg)
+                docker_db_manager.update_docker_image(docker_image)
+                self.load_docker_images()
 
     def display_container_info(self) -> None:
         """Показывает детали выбранного образа или контейнера."""
