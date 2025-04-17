@@ -25,7 +25,12 @@ class PeakStats:
 
 
 class DockerManager:
-    def __init__(self, host_config: DockerHostConfig | None = None, **kwargs) -> None:
+    def __init__(
+        self,
+        host_config: DockerHostConfig | None = None,
+        tls_config: docker.tls.TLSConfig | None = None,
+        **kwargs,
+    ) -> None:
         """
         Инициализация DockerManager.
 
@@ -33,27 +38,10 @@ class DockerManager:
         :param kwargs: Дополнительные параметры для docker.from_env()
         """
         self._host_config = host_config
+        self._tls_config = tls_config
         try:
             if host_config and host_config.base_url:
-                # Создаем конфигурацию TLS если нужно
-                tls_config = None
-                if all(
-                    [
-                        host_config.tls_ca_cert,
-                        host_config.tls_client_cert,
-                        host_config.tls_client_key,
-                    ],
-                ):
-                    tls_config = docker.tls.TLSConfig(
-                        ca_cert=host_config.tls_ca_cert,
-                        client_cert=(
-                            host_config.tls_client_cert,
-                            host_config.tls_client_key,
-                        ),
-                        verify=host_config.tls_verify,
-                    )
-
-                # Подключение к удаленному хосту
+                tls_config or _create_tls_config(host_config)
                 self.client = docker.DockerClient(
                     base_url=host_config.base_url,
                     tls=tls_config,
@@ -347,3 +335,21 @@ class DockerManager:
                 f"Ошибка при подключении к контейнеру {container_id_or_name}: {e}",
             )
             return False
+
+
+def _create_tls_config(host_config: DockerHostConfig) -> docker.tls.TLSConfig | None:
+    """Создает конфигурацию TLS для Docker клиента."""
+    if not all(
+        [
+            host_config.tls_ca_cert,
+            host_config.tls_client_cert,
+            host_config.tls_client_key,
+        ],
+    ):
+        return None
+
+    return docker.tls.TLSConfig(
+        ca_cert=host_config.tls_ca_cert,
+        client_cert=(host_config.tls_client_cert, host_config.tls_client_key),
+        verify=host_config.tls_verify,
+    )

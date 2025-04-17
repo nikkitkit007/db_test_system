@@ -123,9 +123,6 @@ class ConfigApp(QWidget):
         self.setLayout(layout)
 
     def open_scenario_builder(self) -> None:
-        """
-        Переключает отображение на страницу ScenarioBuilderPage.
-        """
         self.stacked_widget.setCurrentIndex(PageIndex.scenario_page)
 
     def open_docker_config_builder(self) -> None:
@@ -136,7 +133,8 @@ class ConfigApp(QWidget):
         docker_images = docker_db_manager.get_all_docker_images()
         self.db_image_combo.clear()
         for image in docker_images:
-            self.db_image_combo.addItem(image.image_name)
+            visible = f"{image.config_name}  ({image.image_name})"
+            self.db_image_combo.addItem(visible, image.config_name)
 
     def load_scenarios(self) -> None:
         scenarios = scenario_db_manager.get_all_scenarios()
@@ -160,10 +158,11 @@ class ConfigApp(QWidget):
         scenario = scenario_db_manager.get_scenario(
             name=self.scenario_combo.currentText(),
         )
+        selected_cfg_name = self.db_image_combo.currentData()
 
         self.thread = QThread(self)
         self.worker = DockerTestRunner(
-            db_image=self.db_image_combo.currentText(),
+            db_config=docker_db_manager.get_image(config_name=selected_cfg_name),
             scenario_steps=scenario.get_steps(),
             host=(
                 self.host_edit.text()

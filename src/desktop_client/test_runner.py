@@ -4,6 +4,7 @@ from src.config.log import get_logger
 from src.core.docker_test import run_test
 from src.core.scenario_steps import ScenarioStep
 from src.schemas.test_init import DbTestConf
+from src.storage.model import DockerImage
 
 logger = get_logger(__name__)
 
@@ -14,7 +15,7 @@ class DockerTestRunner(QObject):
 
     def __init__(
         self,
-        db_image: str,
+        db_config: DockerImage,
         scenario_steps: list[ScenarioStep],
         host: str | None = None,
         port: int | None = None,
@@ -22,7 +23,7 @@ class DockerTestRunner(QObject):
         parent=None,
     ) -> None:
         super().__init__(parent)
-        self.db_image = db_image
+        self.db_config = db_config
         self.scenario_steps = scenario_steps
         self.host = host
         self.port = port
@@ -33,7 +34,7 @@ class DockerTestRunner(QObject):
         try:
             run_test(
                 DbTestConf(
-                    db_image=self.db_image,
+                    db_config=self.db_config,
                     scenario_steps=self.scenario_steps,
                 ),
             )

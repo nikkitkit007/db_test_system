@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.core.scenario_steps import ScenarioStep
+from src.storage.model import DockerImage
 
 
 class DockerHostConfig(BaseModel):
@@ -31,7 +32,7 @@ class DockerHostConfig(BaseModel):
 
 
 class DbTestConf(BaseModel):
-    db_image: str
+    db_config: DockerImage
     scenario_steps: list[ScenarioStep]
     docker_host: DockerHostConfig | None = Field(
         default=None,

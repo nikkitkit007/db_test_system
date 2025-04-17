@@ -1,38 +1,17 @@
 import re
 import time
 
-import docker.tls
-
 from src.config.log import get_logger
 from src.core.scenario_steps import ScenarioStep, StepType
 from src.manager.db.base_adapter import BaseAdapter
 from src.manager.db.redis_adapter import RedisAdapter
 from src.manager.db.sql_adapter import SQLAdapter
-from src.manager.docker_manager import DockerManager
-from src.schemas.test_init import DbTestConf, DockerHostConfig
-from src.storage.db_manager.docker_storage import docker_db_manager
+from src.manager.docker_manager import DockerManager, _create_tls_config
+from src.schemas.test_init import DbTestConf
 from src.storage.db_manager.result_storage import result_manager
 from src.storage.model import TestResults
 
 logger = get_logger(__name__)
-
-
-def _create_tls_config(host_config: DockerHostConfig) -> docker.tls.TLSConfig | None:
-    """Создает конфигурацию TLS для Docker клиента."""
-    if not all(
-        [
-            host_config.tls_ca_cert,
-            host_config.tls_client_cert,
-            host_config.tls_client_key,
-        ],
-    ):
-        return None
-
-    return docker.tls.TLSConfig(
-        ca_cert=host_config.tls_ca_cert,
-        client_cert=(host_config.tls_client_cert, host_config.tls_client_key),
-        verify=host_config.tls_verify,
-    )
 
 
 def run_test(db_test_conf: DbTestConf) -> None:
@@ -40,18 +19,19 @@ def run_test(db_test_conf: DbTestConf) -> None:
     Основной метод для запуска теста
     """
     # Создаем конфигурацию TLS если нужно
-    tls_config = None
-    if db_test_conf.docker_host:
-        tls_config = _create_tls_config(db_test_conf.docker_host)
-
-    # Инициализируем менеджер Docker с учетом конфигурации хоста
-    docker_manager = DockerManager(
-        host_config=db_test_conf.docker_host,
-        tls_config=tls_config,
+    tls_cfg = (
+        _create_tls_config(db_test_conf.docker_host)
+        if db_test_conf.docker_host
+        else None
     )
 
-    db_image = db_test_conf.db_image
-    config = docker_db_manager.get_db_config(db_image)
+    docker_manager = DockerManager(
+        host_config=db_test_conf.docker_host,
+        tls_config=tls_cfg,
+    )
+
+    db_image = db_test_conf.db_config.image_name
+    config = db_test_conf.db_config.get_config_as_json()
 
     # Подтягиваем Docker-образ (если отсутствует локально — docker pull)
     docker_manager.pull_image(db_image)
@@ -129,7 +109,7 @@ def _run_scenario_steps(
             result_manager.insert_result(
                 TestResults(
                     timestamp=timestamp,
-                    db_image=db_test_conf.db_image,
+                    db_image=db_test_conf.db_config.image_name,
                     operation=step.step_type.value,
                     num_records=getattr(step, "num_records", 0),
                     step_description=str(step),

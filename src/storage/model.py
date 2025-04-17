@@ -47,6 +47,9 @@ class DockerImage(Base):
         self.created_at = datetime.datetime.now(datetime.UTC)
         self.updated_at = datetime.datetime.now(datetime.UTC)
 
+    def get_config_as_json(self):
+        return json.loads(self.config)
+
 
 class AiConfig(Base):
     __tablename__ = "ai_config"

@@ -1,3 +1,4 @@
+from docker.errors import DockerException
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QCheckBox,
@@ -14,6 +15,9 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from src.manager.docker_manager import DockerManager
+from src.schemas.test_init import DockerHostConfig
+
 
 class ScanHostDialog(QDialog):
     def __init__(self, parent=None) -> None:
@@ -23,18 +27,19 @@ class ScanHostDialog(QDialog):
 
         layout = QVBoxLayout(self)
 
-        # Ввод хоста
+        # ─── Ввод хоста ───
         host_layout = QHBoxLayout()
         host_layout.addWidget(QLabel("Хост (tcp://host:port):"))
         self.host_edit = QLineEdit()
+        # дефолт для локального демона по TCP
         self.host_edit.setText("tcp://localhost:2375")
-
         host_layout.addWidget(self.host_edit)
+
         self.scan_btn = QPushButton("Сканировать")
         host_layout.addWidget(self.scan_btn)
         layout.addLayout(host_layout)
 
-        # Таблица с чекбоксами
+        # ─── Таблица с чекбоксами ───
         self.table = QTableWidget(0, 3, self)
         self.table.setHorizontalHeaderLabels(["", "Имя контейнера", "Образ"])
         self.table.horizontalHeader().setSectionResizeMode(
@@ -51,35 +56,64 @@ class ScanHostDialog(QDialog):
         )
         layout.addWidget(self.table, 1)
 
-        # Кнопка добавить
+        # ─── Кнопка добавить ───
         btn_layout = QHBoxLayout()
         btn_layout.addStretch(1)
         self.add_selected_btn = QPushButton("Добавить выбранные")
         btn_layout.addWidget(self.add_selected_btn)
         layout.addLayout(btn_layout)
 
-        # Сигналы
+        # ─── Сигналы ───
         self.scan_btn.clicked.connect(self.on_scan)
         self.add_selected_btn.clicked.connect(self.accept)
 
-        # Результат
+        # результат сканирования
         self.containers: list[dict] = []
 
     def on_scan(self) -> None:
-        """Вызывается по нажатию 'Сканировать' — ставим host, вызываем DockerManager."""
-        from src.manager.docker_manager import DockerManager
-        from src.schemas.test_init import DockerHostConfig
-
+        """
+        Сначала пытаемся соединиться с Docker.
+        Если в поле хоста пусто или стоит tcp://localhost:2375,
+        используем локальное подключение через docker.from_env().
+        Иначе — через DockerHostConfig(base_url=...).
+        """
         host_url = self.host_edit.text().strip()
-        if not host_url:
-            return  # можно добавить QMessageBox.warning
+        use_local = host_url in ("", "tcp://localhost:2375")
 
-        cfg = DockerHostConfig(base_url=host_url)
-        mgr = DockerManager(host_config=cfg)
+        # Создаём менеджер
+        try:
+            if use_local:
+                mgr = DockerManager(host_config=None, timeout=3)
+            else:
+                cfg = DockerHostConfig(
+                    base_url=host_url,
+                    # TLS-поля в этом диалоге мы не вводим, поэтому None
+                    tls_ca_cert=None,
+                    tls_client_cert=None,
+                    tls_client_key=None,
+                    tls_verify=True,
+                )
+                mgr = DockerManager(host_config=cfg, timeout=3)
+        except DockerException as e:
+            QMessageBox.critical(self, "Ошибка подключения", str(e))
+            return
+
+        # Получаем список контейнеров
         try:
             containers = mgr.scan_host_containers()
-        except Exception as e:
+        except DockerException as e:
             QMessageBox.critical(self, "Ошибка сканирования", str(e))
+            return
+        except Exception as e:
+            QMessageBox.critical(self, "Неожиданная ошибка", str(e))
+            return
+
+        if not containers:
+            QMessageBox.information(
+                self,
+                "Результат",
+                "Контейнеры не найдены или нет доступа к Docker‑демону.",
+            )
             return
 
         # Обновляем таблицу
@@ -104,7 +138,6 @@ class ScanHostDialog(QDialog):
         """Вернёт список отмеченных пользователем контейнеров."""
         result = []
         for row in range(self.table.rowCount()):
-            # достаём наш виджет‑чекбокс
             cell = self.table.cellWidget(row, 0)
             chk: QCheckBox = cell.layout().itemAt(0).widget()
             if chk.isChecked():
