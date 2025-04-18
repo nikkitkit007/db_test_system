@@ -31,7 +31,7 @@ logger = get_logger(__name__)
 
 
 class ConfigApp(QWidget):
-    test_completed = pyqtSignal()  # Сигнал для обновления результатов
+    test_completed = pyqtSignal()
 
     def __init__(self, stacked_widget: QStackedWidget) -> None:
         super().__init__()
@@ -47,7 +47,7 @@ class ConfigApp(QWidget):
         # Добавляем радиокнопки для выбора типа подключения
         self.create_new_db_radio = QRadioButton("Создать новую БД")
         self.connect_existing_db_radio = QRadioButton("Подключиться к существующей БД")
-        self.create_new_db_radio.setChecked(True)  # По умолчанию создаем новую
+        self.create_new_db_radio.setChecked(True)
 
         # Поля для подключения к существующей БД
         self.host_label = QLabel("Хост:")
@@ -60,7 +60,7 @@ class ConfigApp(QWidget):
         self.add_scenario_button = QPushButton("Добавить новый сценарий")
         self.start_button = QPushButton("Запустить тест")
 
-        self.stacked_widget = stacked_widget  # Ссылка на QStackedWidget
+        self.stacked_widget = stacked_widget
 
         self.thread = None
         self.worker = None

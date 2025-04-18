@@ -6,7 +6,7 @@ from src.core.scenario_steps import ScenarioStep, StepType
 from src.manager.db.base_adapter import BaseAdapter
 from src.manager.db.redis_adapter import RedisAdapter
 from src.manager.db.sql_adapter import SQLAdapter
-from src.manager.docker_manager import DockerManager, _create_tls_config
+from src.manager.docker_manager import DockerManager
 from src.schemas.test_init import DbTestConf
 from src.storage.db_manager.result_storage import result_manager
 from src.storage.model import TestResults
@@ -19,15 +19,9 @@ def run_test(db_test_conf: DbTestConf) -> None:
     Основной метод для запуска теста
     """
     # Создаем конфигурацию TLS если нужно
-    tls_cfg = (
-        _create_tls_config(db_test_conf.docker_host)
-        if db_test_conf.docker_host
-        else None
-    )
 
     docker_manager = DockerManager(
         host_config=db_test_conf.docker_host,
-        tls_config=tls_cfg,
     )
 
     db_image = db_test_conf.db_config.image_name

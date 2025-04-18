@@ -28,7 +28,6 @@ class DockerManager:
     def __init__(
         self,
         host_config: DockerHostConfig | None = None,
-        tls_config: docker.tls.TLSConfig | None = None,
         **kwargs,
     ) -> None:
         """
@@ -37,14 +36,16 @@ class DockerManager:
         :param host_config: Конфигурация для подключения к Docker хосту
         :param kwargs: Дополнительные параметры для docker.from_env()
         """
+
         self._host_config = host_config
-        self._tls_config = tls_config
+        self._tls_config = None
         try:
             if host_config and host_config.base_url:
-                tls_config or _create_tls_config(host_config)
+                self._tls_config = _create_tls_config(host_config)
+
                 self.client = docker.DockerClient(
                     base_url=host_config.base_url,
-                    tls=tls_config,
+                    tls=self._tls_config,
                     version=host_config.version,
                     timeout=host_config.timeout,
                 )
@@ -280,42 +281,36 @@ class DockerManager:
     def scan_host_containers(self) -> list[dict]:
         """
         Сканирует хост и возвращает информацию о всех контейнерах.
-
-        :return: Список словарей с информацией о контейнерах
         """
         try:
             containers = self.client.containers.list(all=True)
-            container_info = []
-
-            for container in containers:
-                container_info.append(
-                    {
-                        "id": container.id,
-                        "name": container.name,
-                        "status": container.status,
-                        "image": (
-                            container.image.tags[0]
-                            if container.image.tags
-                            else "untagged"
-                        ),
-                        "ports": container.ports,
-                        "created": container.attrs["Created"],
-                        "state": container.attrs["State"],
-                        "labels": container.labels,
-                    },
-                )
-
-            return container_info
         except DockerException as e:
             logger.exception(f"Ошибка при сканировании контейнеров: {e}")
             return []
 
+        container_info = []
+
+        for container in containers:
+            container_info.append(
+                {
+                    "id": container.id,
+                    "name": container.name,
+                    "status": container.status,
+                    "image": (
+                        container.image.tags[0] if container.image.tags else "untagged"
+                    ),
+                    "ports": container.ports,
+                    "created": container.attrs["Created"],
+                    "state": container.attrs["State"],
+                    "labels": container.labels,
+                },
+            )
+
+        return container_info
+
     def connect_to_container(self, container_id_or_name: str) -> bool:
         """
         Подключается к существующему контейнеру.
-
-        :param container_id_or_name: ID или имя контейнера
-        :return: True если подключение успешно, False в противном случае
         """
         try:
             container = self.client.containers.get(container_id_or_name)
