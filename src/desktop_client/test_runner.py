@@ -10,6 +10,8 @@ logger = get_logger(__name__)
 
 
 class DockerTestRunner(QObject):
+    log = pyqtSignal(str)
+
     finished = pyqtSignal()
     error = pyqtSignal(str)
 
@@ -27,7 +29,9 @@ class DockerTestRunner(QObject):
 
     @pyqtSlot()
     def run(self) -> None:
+        self.log.emit("✨ Запускаем тест...")
         try:
+
             run_test(
                 DbTestConf(
                     db_config=self.db_config,
@@ -35,6 +39,7 @@ class DockerTestRunner(QObject):
                     test_system_config=self.test_system_config,
                 ),
             )
+            self.log.emit("🟢 Тест завершён.")
         except Exception as e:
             logger.exception("Ошибка в DockerTestWorker: %s", e)
         finally:

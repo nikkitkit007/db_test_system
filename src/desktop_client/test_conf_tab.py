@@ -1,4 +1,5 @@
 import os
+from datetime import UTC, datetime
 
 from PyQt6.QtCore import QThread, pyqtSignal
 from PyQt6.QtGui import QFont
@@ -11,10 +12,12 @@ from PyQt6.QtWidgets import (
     QLabel,
     QLineEdit,
     QMessageBox,
+    QPlainTextEdit,
     QPushButton,
     QRadioButton,
     QSpinBox,
     QStackedWidget,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -73,8 +76,10 @@ class ConfigApp(QWidget):
 
         self.stacked_widget = stacked_widget
 
-        self.thread = None
-        self.worker = None
+        # self.thread = None
+        # self.worker = None
+        self.tests = []  # список словарей {thread, worker, log_widget}
+        self.log_tabs = QTabWidget()
 
         self.initUI()
 
@@ -133,7 +138,7 @@ class ConfigApp(QWidget):
         # Кнопка запуска
         self.start_button.clicked.connect(self.start_process)
         layout.addWidget(self.start_button)
-
+        layout.addWidget(self.log_tabs, 3)
         self.setLayout(layout)
 
     def open_scenario_builder(self) -> None:
@@ -165,14 +170,12 @@ class ConfigApp(QWidget):
             logger.exception(f"Ошибка запуска теста: {e}")
 
     def run_test_in_thread(self) -> None:
-        if self.thread is not None and self.thread.isRunning():
-            QMessageBox.warning(self, "Предупреждение", "Тест уже выполняется!")
-            return
-
+        # 1) собираем входные данные
         scenario = scenario_db_manager.get_scenario(
             name=self.scenario_combo.currentText(),
         )
-        selected_cfg_name = self.db_image_combo.currentData()
+        selected_cfg = self.db_image_combo.currentData()
+
         test_system_config = TestSystemConfig(
             host=(
                 self.host_edit.text()
@@ -181,36 +184,66 @@ class ConfigApp(QWidget):
             ),
             port=(
                 int(self.port_edit.text())
-                if self.connect_existing_db_radio.isChecked() and self.port_edit.text()
+                if (
+                    self.connect_existing_db_radio.isChecked() and self.port_edit.text()
+                )
                 else None
             ),
             use_existing=self.connect_existing_db_radio.isChecked(),
             stop_after=self.stop_checkbox.isChecked(),
             remove_after=self.remove_checkbox.isChecked(),
         )
-        self.thread = QThread(self)
-        self.worker = DockerTestRunner(
-            db_config=docker_db_manager.get_image(config_name=selected_cfg_name),
+
+        # 2) создаём объекты
+        thread = QThread(self)
+        worker = DockerTestRunner(
+            db_config=docker_db_manager.get_image(config_name=selected_cfg),
             scenario_steps=scenario.get_steps(),
             test_system_config=test_system_config,
-            parent=None,
         )
-        self.worker.moveToThread(self.thread)
+        worker.moveToThread(thread)
 
-        self.thread.started.connect(self.worker.run)
-        self.worker.finished.connect(self.thread.quit)
-        self.worker.finished.connect(self.worker.deleteLater)
-        self.thread.finished.connect(self.thread.deleteLater)
-        self.worker.error.connect(lambda msg: QMessageBox.critical(self, "Ошибка", msg))
+        # 3) отдельная вкладка‑лог
+        log_widget = QPlainTextEdit()
+        log_widget.setReadOnly(True)
+        tab_name = f"{scenario.name} @ {datetime.now(UTC).strftime('%H:%M:%S')}"
+        tab_idx = self.log_tabs.addTab(log_widget, tab_name)
+        self.log_tabs.setCurrentIndex(tab_idx)
 
-        self.worker.finished.connect(self.on_test_finished)
-        self.thread.start()
+        # 4) сохраняем для дальнейшей обработки
+        self.tests.append(
+            {
+                "thread": thread,
+                "worker": worker,
+                "log_widget": log_widget,
+                "tab_index": tab_idx,
+            },
+        )
 
-    def on_test_finished(self) -> None:
+        # 5) соединяем сигналы
+        worker.log.connect(log_widget.appendPlainText)
+        thread.started.connect(worker.run)
+
+        worker.finished.connect(thread.quit)
+        worker.finished.connect(worker.deleteLater)
+        thread.finished.connect(thread.deleteLater)
+
+        worker.error.connect(lambda msg: QMessageBox.critical(self, "Ошибка", msg))
+        worker.finished.connect(lambda w=worker: self.on_test_finished(w))
+
+        # 6) запускаем
+        thread.start()
+
+    def on_test_finished(self, finished_worker) -> None:
+        for t in self.tests:
+            if t["worker"] is finished_worker:
+                # помечаем вкладку
+                txt = self.log_tabs.tabText(t["tab_index"])
+                if not txt.endswith(" ✅"):
+                    self.log_tabs.setTabText(t["tab_index"], txt + " ✅")
+                break
         self.test_completed.emit()
         logger.info("🟢 Тест завершён.")
-        self.thread = None
-        self.worker = None
 
     def showEvent(self, event) -> None:
         super().showEvent(event)
