@@ -3,6 +3,7 @@ import os
 from PyQt6.QtCore import QThread, pyqtSignal
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QGridLayout,
     QGroupBox,
@@ -22,6 +23,7 @@ from src.config.config import settings
 from src.config.log import get_logger
 from src.desktop_client.config import PageIndex
 from src.desktop_client.test_runner import DockerTestRunner
+from src.schemas.test_init import TestSystemConfig
 from src.storage.db_manager.docker_storage import docker_db_manager
 from src.storage.db_manager.scenario_storage import scenario_db_manager
 
@@ -48,6 +50,15 @@ class ConfigApp(QWidget):
         self.create_new_db_radio = QRadioButton("Создать новую БД")
         self.connect_existing_db_radio = QRadioButton("Подключиться к существующей БД")
         self.create_new_db_radio.setChecked(True)
+        self.stop_checkbox = QCheckBox("Остановить контейнер по завершении")
+        self.remove_checkbox = QCheckBox("Удалить контейнер после остановки")
+
+        # По умолчанию – только остановить
+        self.stop_checkbox.setChecked(True)
+        self.remove_checkbox.setChecked(False)
+        self.remove_checkbox.toggled.connect(
+            lambda state: self.stop_checkbox.setChecked(True) if state else None,
+        )
 
         # Поля для подключения к существующей БД
         self.host_label = QLabel("Хост:")
@@ -98,6 +109,9 @@ class ConfigApp(QWidget):
         docker_layout.addWidget(self.host_edit, 2, 1, 1, 2)
         docker_layout.addWidget(self.port_label, 3, 0)
         docker_layout.addWidget(self.port_edit, 3, 1, 1, 2)
+
+        docker_layout.addWidget(self.stop_checkbox, 4, 0, 1, 3)
+        docker_layout.addWidget(self.remove_checkbox, 5, 0, 1, 3)
 
         layout.addWidget(docker_group)
 
@@ -159,11 +173,7 @@ class ConfigApp(QWidget):
             name=self.scenario_combo.currentText(),
         )
         selected_cfg_name = self.db_image_combo.currentData()
-
-        self.thread = QThread(self)
-        self.worker = DockerTestRunner(
-            db_config=docker_db_manager.get_image(config_name=selected_cfg_name),
-            scenario_steps=scenario.get_steps(),
+        test_system_config = TestSystemConfig(
             host=(
                 self.host_edit.text()
                 if self.connect_existing_db_radio.isChecked()
@@ -175,6 +185,14 @@ class ConfigApp(QWidget):
                 else None
             ),
             use_existing=self.connect_existing_db_radio.isChecked(),
+            stop_after=self.stop_checkbox.isChecked(),
+            remove_after=self.remove_checkbox.isChecked(),
+        )
+        self.thread = QThread(self)
+        self.worker = DockerTestRunner(
+            db_config=docker_db_manager.get_image(config_name=selected_cfg_name),
+            scenario_steps=scenario.get_steps(),
+            test_system_config=test_system_config,
             parent=None,
         )
         self.worker.moveToThread(self.thread)

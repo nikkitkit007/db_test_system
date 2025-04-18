@@ -121,11 +121,14 @@ class DockerManager:
             logger.exception(f"Ошибка при запуске контейнера: {e}")
             return None
 
-    def stop_container(self) -> None:
+    def stop_container(
+        self,
+        stop: bool = True,
+        remove: bool = False,
+    ) -> None:
         try:
             container = self.client.containers.get(self.container_name)
-            self._stop_and_remove_container(container)
-            logger.info(f"Контейнер {self.container_name} остановлен и удален.")
+            self._stop_and_remove_container(container, stop=stop, remove=remove)
         except NotFound:
             logger.warning(f"Контейнер {self.container_name} не найден.")
         except DockerException as e:
@@ -146,8 +149,6 @@ class DockerManager:
     def remove_container_if_exists(self, container_name: str) -> None:
         """
         Удаляет контейнер, если он существует.
-
-        :param container_name: Название контейнера.
         """
         try:
             container = self.client.containers.get(container_name)
@@ -224,10 +225,20 @@ class DockerManager:
                 break
 
     @staticmethod
-    def _stop_and_remove_container(container: Container) -> None:
+    def _stop_and_remove_container(
+        container: Container,
+        stop: bool = True,
+        remove: bool = True,
+    ) -> None:
         try:
-            container.stop()
-            container.remove()
+            if stop:
+                container.stop()
+                logger.info(f"Контейнер {container.name} остановлен.")
+
+            if remove:
+                container.stop()
+                container.remove()
+                logger.info(f"Контейнер {container.name} удален.")
         except DockerException as e:
             logger.exception(f"Ошибка при остановке/удалении контейнера: {e}")
 

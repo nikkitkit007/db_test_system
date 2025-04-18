@@ -80,8 +80,12 @@ def run_test(db_test_conf: DbTestConf) -> None:
     # 4) Выполняем непосредственно тест (замеряем время, память)
     _run_scenario_steps(adapter, docker_manager, db_test_conf)
 
-    # 5) Останавливаем контейнер (при желании можно оставить на отладку)
-    docker_manager.stop_container()
+    # 5) Останавливаем контейнер
+    test_system_config = db_test_conf.test_system_config
+    docker_manager.stop_container(
+        stop=test_system_config.stop_after,
+        remove=test_system_config.remove_after,
+    )
 
 
 def _run_scenario_steps(

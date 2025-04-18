@@ -13,7 +13,7 @@ logger = get_logger(__name__)
 def generate_csv(
     num_records: int,
     data_types: dict[str, ColumnDefinition],
-    file_name: str | None = None,
+    file_name: str = "test_data_file.csv",
 ) -> str:
     data = {
         col: _generate_column_values(
@@ -24,8 +24,6 @@ def generate_csv(
         for col, col_definition in data_types.items()
     }
     df = pd.DataFrame(data)
-    if not file_name:
-        file_name = "test_data_file.csv"
     df.to_csv(file_name, index=False)
 
     logger.info(f"CSV file {file_name} with {num_records} records generated.")

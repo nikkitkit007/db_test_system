@@ -31,6 +31,14 @@ class DockerHostConfig(BaseModel):
     )
 
 
+class TestSystemConfig(BaseModel):
+    host: str | None = None
+    port: int | None = None
+    use_existing: bool = False
+    stop_after: bool = False
+    remove_after: bool = False
+
+
 class DbTestConf(BaseModel):
     db_config: DockerImage
     scenario_steps: list[ScenarioStep]
@@ -38,5 +46,6 @@ class DbTestConf(BaseModel):
         default=None,
         description="Конфигурация для подключения к Docker хосту. Если None, используется локальный хост.",
     )
+    test_system_config: TestSystemConfig
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
