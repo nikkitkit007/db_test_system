@@ -1,4 +1,5 @@
 import os
+from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from PyQt6.QtCore import QThread, pyqtSignal
@@ -21,6 +22,7 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from PyQt6.sip import isdeleted
 
 from src.config.config import settings
 from src.config.log import get_logger
@@ -33,6 +35,13 @@ from src.storage.db_manager.scenario_storage import scenario_db_manager
 test_config_icon_path = os.path.join(settings.ICONS_PATH, "test_config_icon.svg")
 
 logger = get_logger(__name__)
+
+
+@dataclass
+class TestHandle:
+    thread: QThread
+    worker: object  # DockerTestRunner
+    tab_index: int
 
 
 class ConfigApp(QWidget):
@@ -138,6 +147,9 @@ class ConfigApp(QWidget):
         # Кнопка запуска
         self.start_button.clicked.connect(self.start_process)
         layout.addWidget(self.start_button)
+
+        self.log_tabs.setTabsClosable(True)
+        self.log_tabs.tabCloseRequested.connect(self.close_log_tab)
         layout.addWidget(self.log_tabs, 3)
         self.setLayout(layout)
 
@@ -210,15 +222,8 @@ class ConfigApp(QWidget):
         tab_idx = self.log_tabs.addTab(log_widget, tab_name)
         self.log_tabs.setCurrentIndex(tab_idx)
 
-        # 4) сохраняем для дальнейшей обработки
-        self.tests.append(
-            {
-                "thread": thread,
-                "worker": worker,
-                "log_widget": log_widget,
-                "tab_index": tab_idx,
-            },
-        )
+        handle = TestHandle(thread=thread, worker=worker, tab_index=tab_idx)
+        self.tests.append(handle)
 
         # 5) соединяем сигналы
         worker.log.connect(log_widget.appendPlainText)
@@ -235,15 +240,45 @@ class ConfigApp(QWidget):
         thread.start()
 
     def on_test_finished(self, finished_worker) -> None:
-        for t in self.tests:
-            if t["worker"] is finished_worker:
-                # помечаем вкладку
-                txt = self.log_tabs.tabText(t["tab_index"])
+        for h in self.tests:
+            if h.worker is finished_worker:
+                txt = self.log_tabs.tabText(h.tab_index)
                 if not txt.endswith(" ✅"):
-                    self.log_tabs.setTabText(t["tab_index"], txt + " ✅")
+                    self.log_tabs.setTabText(h.tab_index, txt + " ✅")
                 break
         self.test_completed.emit()
-        logger.info("🟢 Тест завершён.")
+
+    def close_log_tab(self, index: int) -> None:
+        handle = next((h for h in self.tests if h.tab_index == index), None)
+        if handle is None:
+            self.log_tabs.removeTab(index)
+            return
+
+        thread = handle.thread
+        if thread and not isdeleted(thread) and thread.isRunning():
+            reply = QMessageBox.question(
+                self,
+                "Тест ещё выполняется",
+                "Остановить тест и закрыть вкладку?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            )
+            if reply != QMessageBox.StandardButton.Yes:
+                return
+            try:
+                thread.requestInterruption()
+                thread.quit()
+                thread.wait(2000)
+            except RuntimeError:
+                # объект уже удалён — игнорируем
+                pass
+
+        self.log_tabs.removeTab(index)
+        self.tests.remove(handle)
+
+        # смещаем индексы оставшихся вкладок
+        for h in self.tests:
+            if h.tab_index > index:
+                h.tab_index -= 1
 
     def showEvent(self, event) -> None:
         super().showEvent(event)
