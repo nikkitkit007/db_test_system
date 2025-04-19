@@ -1,6 +1,7 @@
 import threading
 import time
 from dataclasses import dataclass
+from urllib.parse import urlparse
 
 import docker
 from docker.errors import DockerException, NotFound
@@ -57,7 +58,7 @@ class DockerManager:
 
         except docker.errors.DockerException as e:
             logger.exception(f"Ошибка при подключении к Docker daemon: {e}")
-            self.log_fn("Успешное подключение к Docker daemon")
+            self.log_fn("Ошибка при подключении к Docker daemon: {e}")
             raise
 
         self.container_name = None
@@ -276,17 +277,19 @@ class DockerManager:
     def get_host(self) -> str:
         """
         Возвращает хост для подключения к БД.
-        Если используется удаленный Docker, возвращает хост из base_url.
-        В противном случае возвращает 'localhost'.
+        - При tcp://... отдаёт имя/IP хоста.
+        - При unix:// или npipe:// — 'localhost'.
         """
-        if (
-            hasattr(self, "_host_config")
-            and self._host_config
-            and self._host_config.base_url
-        ):
-            # Если используется удаленный Docker, берем хост из base_url
-            return self._host_config.base_url.split("://")[1].split(":")[0]
-        return "localhost"
+        base = getattr(self, "_host_config", None)
+        if not base or not base.base_url:
+            return "localhost"
+
+        parsed = urlparse(base.base_url)
+        scheme = parsed.scheme.lower()
+        if scheme in ("unix", "npipe"):
+            return "localhost"
+
+        return parsed.hostname or "localhost"
 
     def scan_host_containers(self) -> list[dict]:
         """

@@ -32,8 +32,6 @@ class DockerHostConfig(BaseModel):
 
 
 class TestSystemConfig(BaseModel):
-    host: str | None = None
-    port: int | None = None
     use_existing: bool = False
     stop_after: bool = False
     remove_after: bool = False
