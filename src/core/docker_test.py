@@ -23,7 +23,6 @@ def run_test(db_test_conf: DbTestConf, log_fn: callable(str)) -> None:
     db_image = db_test_conf.db_config.image_name
     config = db_test_conf.db_config.get_config_as_json()
 
-    # Подтягиваем Docker-образ (если отсутствует локально — docker pull)
     docker_manager.pull_image(db_image)
 
     # Получаем конфигурацию для данного образа (порт, тип БД и т. д.)
@@ -31,18 +30,35 @@ def run_test(db_test_conf: DbTestConf, log_fn: callable(str)) -> None:
     container_name = f"{_clear_container_name(db_image)}_test"
     environment = config.get("env", {})
     exposed_port = config["port"]
-    ports = {exposed_port: exposed_port}  # Проброс порта 1:1
+    ports = {exposed_port: exposed_port}
 
     # Определяем хост для подключения к БД
     db_host = docker_manager.get_host()
 
     # 1) Запускаем контейнер
-    docker_manager.run_container(
-        image_name=db_image,
-        container_name=container_name,
-        environment=environment,
-        ports=ports,
-    )
+    if db_test_conf.test_system_config.use_existing:
+        log_fn(
+            f"🛠 Пытаемся подключиться к существующему контейнеру '{container_name}'…",
+        )
+        connected = docker_manager.connect_to_container(container_name)
+        if connected:
+            log_fn(f"✅ Подключились к контейнеру '{container_name}'.")
+        else:
+            log_fn(f"❗ Контейнер '{container_name}' не запущен, запускаем новый.")
+            docker_manager.run_container(
+                image_name=db_image,
+                container_name=container_name,
+                ports=ports,
+                environment=environment,
+            )
+    else:
+        log_fn(f"🚀 Запускаем контейнер '{container_name}' с образом '{db_image}'…")
+        docker_manager.run_container(
+            image_name=db_image,
+            container_name=container_name,
+            ports=ports,
+            environment=environment,
+        )
 
     # 2) Определяем, какой адаптер использовать (SQLAdapter, RedisAdapter, ...)
     db_type = config["db_type"].lower()
