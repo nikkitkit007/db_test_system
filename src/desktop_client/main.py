@@ -18,9 +18,15 @@ from PyQt6.QtWidgets import (
 
 from src.config.app_styles import style_sheet
 from src.config.config import settings
-from src.desktop_client.ai_config import AiConfigPage, ai_config_icon_path
+from src.desktop_client.ai_config_page.ai_config import (
+    AiConfigPage,
+    ai_config_icon_path,
+)
 from src.desktop_client.config import PageIndex
-from src.desktop_client.docker_config import DockerImagesPage, docker_image_icon_path
+from src.desktop_client.docker_page.docker_config import (
+    DockerImagesPage,
+    docker_image_icon_path,
+)
 from src.desktop_client.results.test_result_tab import TestResultsApp, results_icon_path
 from src.desktop_client.test_conf_tab import (
     ConfigApp,

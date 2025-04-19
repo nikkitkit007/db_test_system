@@ -1,6 +1,8 @@
 import enum
 from enum import auto
 
+from sqlalchemy import Boolean, Date, Float, Integer, String
+
 
 class AutoName(enum.Enum):
 
@@ -19,5 +21,13 @@ class DataType(str, AutoName):
     date = auto()
     bool = auto()
 
+
+sql_type_mapping = {
+    "int": Integer,
+    "str": String,
+    "date": Date,
+    "bool": Boolean,
+    "float": Float,
+}
 
 data_type_list = [item.value for item in DataType]

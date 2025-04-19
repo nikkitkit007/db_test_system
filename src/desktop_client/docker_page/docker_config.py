@@ -19,8 +19,8 @@ from PyQt6.QtWidgets import (
 )
 
 from src.config.config import settings
+from src.desktop_client.docker_page.image_config_editor_dialog import ConfigEditorDialog
 from src.desktop_client.docker_page.scan_host_dialog import ScanHostDialog
-from src.desktop_client.image_config_editor_dialog import ConfigEditorDialog
 from src.storage.db_manager.docker_storage import docker_db_manager
 from src.storage.model import DockerImage
 

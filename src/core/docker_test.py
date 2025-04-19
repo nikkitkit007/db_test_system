@@ -1,27 +1,23 @@
 import re
 import time
 
-from src.config.log import get_logger
 from src.core.scenario_steps import ScenarioStep, StepType
 from src.manager.db.base_adapter import BaseAdapter
 from src.manager.db.redis_adapter import RedisAdapter
 from src.manager.db.sql_adapter import SQLAdapter
 from src.manager.docker_manager import DockerManager
-from src.schemas.test_init import DbTestConf
+from src.schemas.schema import DbTestConf
 from src.storage.db_manager.result_storage import result_manager
 from src.storage.model import TestResults
 
-logger = get_logger(__name__)
 
-
-def run_test(db_test_conf: DbTestConf) -> None:
+def run_test(db_test_conf: DbTestConf, log_fn: callable(str)) -> None:
     """
     Основной метод для запуска теста
     """
-    # Создаем конфигурацию TLS если нужно
-
     docker_manager = DockerManager(
         host_config=db_test_conf.docker_host,
+        log_fn=log_fn,
     )
 
     db_image = db_test_conf.db_config.image_name
@@ -31,7 +27,6 @@ def run_test(db_test_conf: DbTestConf) -> None:
     docker_manager.pull_image(db_image)
 
     # Получаем конфигурацию для данного образа (порт, тип БД и т. д.)
-
     # Формируем имя контейнера, переменные окружения, порты и т. д.
     container_name = f"{_clear_container_name(db_image)}_test"
     environment = config.get("env", {})
@@ -41,7 +36,7 @@ def run_test(db_test_conf: DbTestConf) -> None:
     # Определяем хост для подключения к БД
     db_host = docker_manager.get_host()
 
-    # 1) Запускаем контейнер ( detach=True внутри run_container )
+    # 1) Запускаем контейнер
     docker_manager.run_container(
         image_name=db_image,
         container_name=container_name,
@@ -78,7 +73,7 @@ def run_test(db_test_conf: DbTestConf) -> None:
     adapter.connect()
 
     # 4) Выполняем непосредственно тест (замеряем время, память)
-    _run_scenario_steps(adapter, docker_manager, db_test_conf)
+    _run_scenario_steps(adapter, docker_manager, db_test_conf, log_fn=log_fn)
 
     # 5) Останавливаем контейнер
     test_system_config = db_test_conf.test_system_config
@@ -92,6 +87,7 @@ def _run_scenario_steps(
     adapter: BaseAdapter,
     docker_manager: DockerManager,
     db_test_conf: DbTestConf,
+    log_fn: callable(str),
 ) -> None:
 
     for step in db_test_conf.scenario_steps:

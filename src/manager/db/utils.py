@@ -19,18 +19,18 @@ def generate_csv(
         col: _generate_column_values(
             col_definition.data_type,
             num_records,
-            col_definition.primary_key,
+            unique=col_definition.primary_key,
         )
         for col, col_definition in data_types.items()
     }
-    df = pd.DataFrame(data)
-    df.to_csv(file_name, index=False)
+    test_data_df = pd.DataFrame(data)
+    test_data_df.to_csv(file_name, index=False)
 
     logger.info(f"CSV file {file_name} with {num_records} records generated.")
     return file_name
 
 
-def _generate_column_values(dt: str, num_records: int, unique: bool):
+def _generate_column_values(dt: str, num_records: int, *, unique: bool):
     if dt == DataType.int:
         if unique:
             return np.random.choice(
@@ -48,13 +48,6 @@ def _generate_column_values(dt: str, num_records: int, unique: bool):
             ).astype(np.float64)
         return np.random.uniform(0, 1000000, size=num_records)
     if dt == DataType.bool:
-        if unique:
-            if num_records > 2:
-                msg = "Невозможно сгенерировать более 2 уникальных булевых значений."
-                raise ValueError(
-                    msg,
-                )
-            return np.array([True, False])[:num_records]
         return np.random.choice([True, False], size=num_records)
     if dt == DataType.date:
         if unique:

@@ -15,9 +15,6 @@ class BaseAdapter:
         raise NotImplementedError
 
     def test_connection(self, retries: int = 5, delay: int = 2) -> bool:
-        """
-        Тест подключения к БД/сервису.
-        """
         raise NotImplementedError
 
     def create_table(self, create_table_step: CreateTableStep) -> None:

@@ -13,10 +13,6 @@ class StepType(enum.Enum):
 
 
 class ScenarioStep(BaseModel):
-    """
-    Базовый класс шага сценария (абстрактный).
-    """
-
     model_config = ConfigDict(json_encoders={StepType: lambda v: v.value})
 
     step_type: StepType

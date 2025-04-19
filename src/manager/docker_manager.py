@@ -8,7 +8,7 @@ from docker.models.containers import Container
 from docker.models.images import Image
 
 from src.config.log import get_logger
-from src.schemas.test_init import DockerHostConfig
+from src.schemas.schema import DockerHostConfig
 
 logger = get_logger(__name__)
 
@@ -28,17 +28,15 @@ class DockerManager:
     def __init__(
         self,
         host_config: DockerHostConfig | None = None,
+        log_fn: callable(str) = None,
         **kwargs,
     ) -> None:
         """
         Инициализация DockerManager.
-
-        :param host_config: Конфигурация для подключения к Docker хосту
-        :param kwargs: Дополнительные параметры для docker.from_env()
         """
-
         self._host_config = host_config
         self._tls_config = None
+        self.log_fn = log_fn or (lambda _: None)
         try:
             if host_config and host_config.base_url:
                 self._tls_config = _create_tls_config(host_config)
@@ -53,12 +51,13 @@ class DockerManager:
                 # Подключение к локальному хосту
                 self.client = docker.from_env(**kwargs)
 
-            # Проверяем подключение
             self.client.ping()
             logger.info("Успешное подключение к Docker daemon")
+            self.log_fn("Успешное подключение к Docker daemon")
 
         except docker.errors.DockerException as e:
             logger.exception(f"Ошибка при подключении к Docker daemon: {e}")
+            self.log_fn("Успешное подключение к Docker daemon")
             raise
 
         self.container_name = None
@@ -72,16 +71,22 @@ class DockerManager:
         Загружает образ из Docker Hub.
         """
         logger.info(f"Загрузка образа {image_name}...")
+        self.log_fn(f"Загрузка образа {image_name}...")
+
         try:
             image = self.client.images.pull(image_name)
             logger.info(f"Образ {image_name} успешно загружен.")
+            self.log_fn(f"Образ {image_name} успешно загружен.")
             return image
         except docker.errors.ImageNotFound:
             logger.exception(f"Образ {image_name} не найден в Docker Hub.")
+            self.log_fn(f"Образ {image_name} не найден в Docker Hub.")
         except docker.errors.APIError as e:
             logger.exception(f"Ошибка API при загрузке образа {image_name}: {e}")
+            self.log_fn(f"Ошибка API при загрузке образа {image_name}: {e}")
         except DockerException as e:
             logger.exception(f"Общая ошибка при загрузке образа {image_name}: {e}")
+            self.log_fn(f"Общая ошибка при загрузке образа {image_name}: {e}")
         return None
 
     def run_container(
@@ -93,18 +98,13 @@ class DockerManager:
     ) -> Container | None:
         """
         Запускает контейнер с указанным образом.
-
-        :param image_name: Название образа Docker.
-        :param container_name: Название контейнера.
-        :param ports: Словарь портов для проброса (например, {"5432/tcp": 5432}).
-        :param environment: Словарь переменных окружения для контейнера.
-        :return: Объект контейнера или None в случае ошибки.
         """
         ports = ports or {}
         try:
             self.remove_container_if_exists(container_name)
 
             logger.info(f"Запуск контейнера {container_name} с образом {image_name}...")
+            self.log_fn(f"Запуск контейнера {container_name} с образом {image_name}...")
             container = self.client.containers.run(
                 image=image_name,
                 name=container_name,
@@ -114,15 +114,18 @@ class DockerManager:
             )
             self.wait_for_container_ready(container, ports)
             logger.info(f"Контейнер {container_name} запущен.")
+            self.log_fn(f"Контейнер {container_name} запущен.")
             self.container_name = container_name
             self.container = container
             return container
         except DockerException as e:
             logger.exception(f"Ошибка при запуске контейнера: {e}")
+            self.log_fn(f"Ошибка при запуске контейнера: {e}")
             return None
 
     def stop_container(
         self,
+        *,
         stop: bool = True,
         remove: bool = False,
     ) -> None:
@@ -131,20 +134,16 @@ class DockerManager:
             self._stop_and_remove_container(container, stop=stop, remove=remove)
         except NotFound:
             logger.warning(f"Контейнер {self.container_name} не найден.")
+            self.log_fn(f"Контейнер {self.container_name} не найден.")
         except DockerException as e:
             logger.exception(f"Ошибка при остановке контейнера: {e}")
+            self.log_fn(f"Ошибка при остановке контейнера: {e}")
 
-    def list_containers(self, with_stopped: bool = True) -> list:
+    def list_containers(self, *, with_stopped: bool = True) -> list:
         """
         Возвращает список всех контейнеров.
-
-        :param with_stopped: Если True, возвращаются все контейнеры, включая остановленные.
         """
-        try:
-            return self.client.containers.list(all=with_stopped)
-        except DockerException as e:
-            logger.exception(f"Ошибка при получении списка контейнеров: {e}")
-            return []
+        return self.client.containers.list(all=with_stopped)
 
     def remove_container_if_exists(self, container_name: str) -> None:
         """
@@ -152,14 +151,15 @@ class DockerManager:
         """
         try:
             container = self.client.containers.get(container_name)
-            self._stop_and_remove_container(container)
-            logger.info(f"Контейнер {container_name} остановлен и удален.")
+            self._stop_and_remove_container(container, stop=False, remove=True)
         except NotFound:
             logger.info(f"Контейнер {container_name} не найден. Ничего не удалено.")
+            self.log_fn(f"Контейнер {container_name} не найден. Ничего не удалено.")
         except DockerException as e:
             logger.exception(f"Ошибка при удалении контейнера: {e}")
+            self.log_fn(f"Ошибка при удалении контейнера: {e}")
 
-    def get_container_stats(self, start: bool = False) -> PeakStats | None:
+    def get_container_stats(self, *, start: bool = False) -> PeakStats | None:
         """
         Если start=True, запускаем поток для мониторинга.
         Если start=False, останавливаем поток и возвращаем пиковые значения.
@@ -224,23 +224,26 @@ class DockerManager:
             if stop_event.is_set():
                 break
 
-    @staticmethod
     def _stop_and_remove_container(
+        self,
         container: Container,
+        *,
         stop: bool = True,
         remove: bool = True,
     ) -> None:
         try:
-            if stop:
-                container.stop()
-                logger.info(f"Контейнер {container.name} остановлен.")
-
             if remove:
                 container.stop()
                 container.remove()
                 logger.info(f"Контейнер {container.name} удален.")
+                self.log_fn(f"Контейнер {container.name} удален.")
+            elif stop:
+                container.stop()
+                logger.info(f"Контейнер {container.name} остановлен.")
+                self.log_fn(f"Контейнер {container.name} остановлен.")
         except DockerException as e:
             logger.exception(f"Ошибка при остановке/удалении контейнера: {e}")
+            self.log_fn(f"Ошибка при остановке/удалении контейнера: {e}")
 
     def wait_for_container_ready(
         self,
@@ -250,22 +253,18 @@ class DockerManager:
     ) -> bool:
         """
         Ожидание готовности контейнера.
-
-        :param container: Объект контейнера.
-        :param ports: Словарь портов для проверки готовности.
-        :param timeout: Время ожидания в секундах.
-        :raises TimeoutError: Если контейнер не готов в течение заданного времени.
-        :return: True, если контейнер готов.
         """
         logger.info(f"Ожидание готовности контейнера {container.name}...")
+        self.log_fn(f"Ожидание готовности контейнера {container.name}...")
         start_time = time.time()
         while time.time() - start_time < timeout:
-            container.reload()  # Обновляем статус контейнера
+            container.reload()
             if container.status == "running":
                 try:
                     for port in ports:
                         if self.client.api.port(container.id, port):
                             logger.info(f"Контейнер {container.name} готов.")
+                            self.log_fn(f"Контейнер {container.name} готов.")
                             return True
                 except DockerException:
                     pass
@@ -293,11 +292,7 @@ class DockerManager:
         """
         Сканирует хост и возвращает информацию о всех контейнерах.
         """
-        try:
-            containers = self.client.containers.list(all=True)
-        except DockerException as e:
-            logger.exception(f"Ошибка при сканировании контейнеров: {e}")
-            return []
+        containers = self.list_containers(with_stopped=True)
 
         container_info = []
 

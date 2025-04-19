@@ -3,7 +3,7 @@ from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 from src.config.log import get_logger
 from src.core.docker_test import run_test
 from src.core.scenario_steps import ScenarioStep
-from src.schemas.test_init import DbTestConf, TestSystemConfig
+from src.schemas.schema import DbTestConf, TestSystemConfig
 from src.storage.model import DockerImage
 
 logger = get_logger(__name__)
@@ -11,7 +11,6 @@ logger = get_logger(__name__)
 
 class DockerTestRunner(QObject):
     log = pyqtSignal(str)
-
     finished = pyqtSignal()
     error = pyqtSignal(str)
 
@@ -38,6 +37,7 @@ class DockerTestRunner(QObject):
                     scenario_steps=self.scenario_steps,
                     test_system_config=self.test_system_config,
                 ),
+                log_fn=self.log.emit,
             )
             self.log.emit("🟢 Тест завершён.")
         except Exception as e:

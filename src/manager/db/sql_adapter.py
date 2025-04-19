@@ -1,15 +1,11 @@
 import time
+from functools import wraps
 from typing import Any
 
 import pandas as pd
 from sqlalchemy import (
-    Boolean,
     Column,
-    Date,
-    Float,
-    Integer,
     MetaData,
-    String,
     Table,
     create_engine,
     text,
@@ -21,16 +17,20 @@ from src.config.log import get_logger
 from src.core.scenario_steps import CreateTableStep, InsertDataStep, QueryStep
 from src.manager.db.base_adapter import BaseAdapter
 from src.manager.db.utils import generate_csv
+from src.schemas.enums import sql_type_mapping
 
 logger = get_logger(__name__)
 
-type_mapping = {
-    "int": Integer,
-    "str": String,
-    "date": Date,
-    "bool": Boolean,
-    "float": Float,
-}
+
+def require_engine(method):
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        if not getattr(self, "engine", None):
+            msg = "Движок не создан. Сначала вызовите connect()."
+            raise ConnectionError(msg)
+        return method(self, *args, **kwargs)
+
+    return wrapper
 
 
 class SQLAdapter(BaseAdapter):
@@ -44,15 +44,6 @@ class SQLAdapter(BaseAdapter):
         port: str | None = None,
         db_name: str | None = None,
     ) -> None:
-        """
-        :param db_type: например, 'postgresql', 'mysql', 'sqlite' и т.д.
-        :param driver:  например, 'psycopg2' для postgresql, 'pymysql' для mysql.
-        :param username: имя пользователя
-        :param password: пароль
-        :param host:     хост
-        :param port:     порт
-        :param db_name:  имя БД (или путь к файлу, если sqlite)
-        """
         super().__init__()
         self.db_type = db_type.lower().strip()
         self.driver = (driver or "").strip()
@@ -91,19 +82,13 @@ class SQLAdapter(BaseAdapter):
             logger.exception(f"Ошибка при создании engine: {e}")
             raise
 
-        # Опционально: можем вызывать test_connection здесь
+        time.sleep(2)
         if not self.test_connection():
             msg = f"Не удалось подключиться к базе {db_url}."
             raise ConnectionError(msg)
 
+    @require_engine
     def test_connection(self, retries: int = 6, delay: int = 2) -> bool:
-        """
-        Тест подключения: делаем несколько попыток выполнить SELECT 1.
-        """
-        if not self.engine:
-            logger.error("Engine не инициализирован. Сначала вызовите connect()")
-            return False
-        time.sleep(1)
         for attempt in range(1, retries + 1):
             try:
                 with self.engine.connect() as connection:
@@ -117,18 +102,15 @@ class SQLAdapter(BaseAdapter):
         logger.error(f"Не удалось подключиться к базе за {retries} попыток.")
         return False
 
+    @require_engine
     def create_table(self, create_table_step: CreateTableStep) -> None:
-        if not self.engine:
-            msg = "Движок не создан. Сначала вызовите connect()."
-            raise ConnectionError(msg)
-
         table_name = create_table_step.table_name
         self.drop_table_if_exists(table_name)
 
         table_columns = (
             Column(
                 column_name,
-                type_mapping[col_def.data_type.lower()],
+                sql_type_mapping[col_def.data_type.lower()],
                 primary_key=col_def.primary_key,
             )
             for column_name, col_def in create_table_step.columns.items()
@@ -146,14 +128,8 @@ class SQLAdapter(BaseAdapter):
         except SQLAlchemyError as e:
             logger.exception(f"Ошибка при создании таблицы {table_name}: {e}")
 
+    @require_engine
     def drop_table_if_exists(self, table_name: str) -> None:
-        """
-        Удаляет таблицу, если существует.
-        """
-        if not self.engine:
-            msg = "Движок не создан. Сначала вызовите connect()."
-            raise ConnectionError(msg)
-
         table = Table(table_name, self.metadata)
         try:
             table.drop(self.engine, checkfirst=True)
@@ -161,17 +137,11 @@ class SQLAdapter(BaseAdapter):
         except SQLAlchemyError as e:
             logger.exception(f"Ошибка при удалении таблицы {table_name}: {e}")
 
+    @require_engine
     def insert_data(
         self,
         insert_step: InsertDataStep,
     ) -> None:
-        """
-        Вставляет данные из DataFrame в указанную таблицу (append-режим).
-        """
-        if not self.engine:
-            msg = "Движок не создан. Сначала вызовите connect()."
-            raise ConnectionError(msg)
-
         table_name = insert_step.table_name
         columns = insert_step.columns
         num_records = insert_step.num_records
@@ -184,14 +154,8 @@ class SQLAdapter(BaseAdapter):
         except SQLAlchemyError as e:
             logger.exception(f"Ошибка при вставке данных в {table_name}: {e}")
 
+    @require_engine
     def execute_query(self, query_step: QueryStep) -> Any:
-        """
-        Выполняет SQL-запрос и возвращает результат (CursorResult).
-        """
-        if not self.engine:
-            msg = "Движок не создан. Сначала вызовите connect()."
-            raise ConnectionError(msg)
-
         result = None
         try:
             with self.engine.connect() as connection:

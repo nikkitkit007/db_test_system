@@ -28,7 +28,7 @@ from src.config.config import settings
 from src.config.log import get_logger
 from src.desktop_client.config import PageIndex
 from src.desktop_client.test_runner import DockerTestRunner
-from src.schemas.test_init import TestSystemConfig
+from src.schemas.schema import TestSystemConfig
 from src.storage.db_manager.docker_storage import docker_db_manager
 from src.storage.db_manager.scenario_storage import scenario_db_manager
 
@@ -275,7 +275,6 @@ class ConfigApp(QWidget):
         self.log_tabs.removeTab(index)
         self.tests.remove(handle)
 
-        # смещаем индексы оставшихся вкладок
         for h in self.tests:
             if h.tab_index > index:
                 h.tab_index -= 1

@@ -50,7 +50,7 @@ class ResultStorage(SQLiteDB):
         with self.session_scope() as session:
             return session.get(TestResults, result_id)
 
-    def get_distinct_db_images(self):
+    def get_distinct_db_images(self) -> list[str]:
         with self.session_scope() as session:
             rows = (
                 session.query(TestResults.db_image)
@@ -60,7 +60,7 @@ class ResultStorage(SQLiteDB):
             )
         return [row[0] for row in rows]
 
-    def get_distinct_operations(self):
+    def get_distinct_operations(self) -> list[str]:
         with self.session_scope() as session:
             rows = (
                 session.query(TestResults.operation)

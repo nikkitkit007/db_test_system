@@ -16,7 +16,7 @@ from PyQt6.QtWidgets import (
 )
 
 from src.manager.docker_manager import DockerManager
-from src.schemas.test_init import DockerHostConfig
+from src.schemas.schema import DockerHostConfig
 
 
 class ScanHostDialog(QDialog):
