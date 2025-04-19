@@ -39,12 +39,15 @@ from src.desktop_client.test_configuration.scenario_tab import (
 )
 
 app_config_icon_path = os.path.join(settings.ICONS_PATH, "app_config_icon.svg")
+app_icon_path = os.path.join(settings.ICONS_PATH, "app_main_icon.svg")
 
 
 class MainApp(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle("Database Test System")
+        self.setWindowIcon(QIcon(app_icon_path))
+
         self.resize(900, 700)
 
         # Настройка центрального виджета и основного лейаута
@@ -112,7 +115,7 @@ class MainApp(QMainWindow):
         self.sidebar_layout.addSpacerItem(spacer)
 
         self.btn_toggle = QToolButton()
-        self.btn_toggle.setText("Collapse")
+        self.btn_toggle.setText("Свернуть")
         self.btn_toggle.clicked.connect(self.toggle_sidebar)
         self.sidebar_layout.addWidget(self.btn_toggle)
 

@@ -1,7 +1,7 @@
 import enum
 from enum import auto
 
-from sqlalchemy import Boolean, Date, Float, Integer, String
+from sqlalchemy import Boolean, Date, Float, Integer
 
 
 class AutoName(enum.Enum):
@@ -24,7 +24,7 @@ class DataType(str, AutoName):
 
 sql_type_mapping = {
     "int": Integer,
-    "str": String,
+    # "str": Text,
     "date": Date,
     "bool": Boolean,
     "float": Float,

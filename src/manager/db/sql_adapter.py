@@ -6,7 +6,9 @@ import pandas as pd
 from sqlalchemy import (
     Column,
     MetaData,
+    String,
     Table,
+    Text,
     create_engine,
     text,
 )
@@ -107,35 +109,43 @@ class SQLAdapter(BaseAdapter):
         table_name = create_table_step.table_name
         self.drop_table_if_exists(table_name)
 
-        table_columns = (
-            Column(
-                column_name,
-                sql_type_mapping[col_def.data_type.lower()],
-                primary_key=col_def.primary_key,
+        columns = []
+        for column_name, col_def in create_table_step.columns.items():
+            dtype = col_def.data_type.lower()
+            primary = col_def.primary_key
+
+            if dtype == "str":
+                type_inst = String(255) if primary else Text()
+            else:
+                cls = sql_type_mapping.get(dtype)
+                if cls is None:
+                    msg = f"Неизвестный тип данных: {col_def.data_type}"
+                    raise ValueError(msg)
+                type_inst = cls()
+
+            columns.append(
+                Column(
+                    column_name,
+                    type_inst,
+                    primary_key=primary,
+                    nullable=not primary,
+                ),
             )
-            for column_name, col_def in create_table_step.columns.items()
-        )
         table = Table(
             table_name,
             self.metadata,
-            *table_columns,
+            *columns,
             extend_existing=True,
         )
 
-        try:
-            table.create(self.engine)
-            logger.info(f"Таблица {table_name} создана.")
-        except SQLAlchemyError as e:
-            logger.exception(f"Ошибка при создании таблицы {table_name}: {e}")
+        table.create(self.engine)
+        logger.info(f"Таблица {table_name} создана.")
 
     @require_engine
     def drop_table_if_exists(self, table_name: str) -> None:
         table = Table(table_name, self.metadata)
-        try:
-            table.drop(self.engine, checkfirst=True)
-            logger.info(f"Таблица {table_name} удалена (если существовала).")
-        except SQLAlchemyError as e:
-            logger.exception(f"Ошибка при удалении таблицы {table_name}: {e}")
+        table.drop(self.engine, checkfirst=True)
+        logger.info(f"Таблица {table_name} удалена (если существовала).")
 
     @require_engine
     def insert_data(
@@ -148,20 +158,14 @@ class SQLAdapter(BaseAdapter):
 
         csv_file = generate_csv(num_records, columns)
         df = pd.read_csv(csv_file)
-        try:
-            df.to_sql(table_name, self.engine, if_exists="append", index=False)
-            logger.info(f"Данные вставлены в таблицу {table_name}.")
-        except SQLAlchemyError as e:
-            logger.exception(f"Ошибка при вставке данных в {table_name}: {e}")
+
+        df.to_sql(table_name, self.engine, if_exists="append", index=False)
+        logger.info(f"Данные вставлены в таблицу {table_name}.")
 
     @require_engine
     def execute_query(self, query_step: QueryStep) -> Any:
         result = None
-        try:
-            with self.engine.connect() as connection:
-                result = connection.execute(text(query_step.query))
-            logger.info(f"Запрос выполнен: {query_step.query}")
-        except SQLAlchemyError as e:
-            logger.exception(f"Ошибка при выполнении запроса: {e}")
-
+        with self.engine.connect() as connection:
+            result = connection.execute(text(query_step.query))
+        logger.info(f"Запрос выполнен: {query_step.query}")
         return result
