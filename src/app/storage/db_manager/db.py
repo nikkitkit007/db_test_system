@@ -2,7 +2,6 @@ from contextlib import contextmanager
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
-
 from src.app.config.log import get_logger
 
 logger = get_logger(__name__)

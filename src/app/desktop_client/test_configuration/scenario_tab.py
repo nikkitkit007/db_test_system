@@ -1,7 +1,9 @@
+import json
 import os
 
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
+    QFileDialog,
     QHBoxLayout,
     QLineEdit,
     QListWidget,
@@ -14,9 +16,11 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-
 from src.app.config.config import settings
-from src.app.desktop_client.test_configuration.scenario_builder import ScenarioBuilderWidget
+from src.app.core.scenario_steps import deserialize_step
+from src.app.desktop_client.test_configuration.scenario_builder import (
+    ScenarioBuilderWidget,
+)
 from src.app.storage.db_manager.scenario_storage import scenario_db_manager
 from src.app.storage.model import Scenario
 
@@ -35,6 +39,8 @@ class ScenarioPage(QWidget):
 
         self.save_button = QPushButton("Сохранить")
         self.delete_button = QPushButton("Удалить")
+        self.export_button = QPushButton("Экспорт сценария")
+        self.import_button = QPushButton("Импорт сценария")
 
         self.initUI()
         self.load_scenarios()
@@ -68,12 +74,19 @@ class ScenarioPage(QWidget):
         scroll_area.setWidget(self.scenario_builder_page)
         right_layout.addWidget(scroll_area, 1)  # растяжимый блок
 
-        # Кнопка «Сохранить» (нижняя часть)
         right_layout.addWidget(self.save_button)
         right_layout.addWidget(self.delete_button)
 
+        btn_row = QHBoxLayout()
+        btn_row.addWidget(self.export_button)
+        btn_row.addWidget(self.import_button)
+
+        right_layout.addLayout(btn_row)
+
         self.save_button.clicked.connect(self.save_scenario)
         self.delete_button.clicked.connect(self.delete_scenario)
+        self.export_button.clicked.connect(self.export_scenario)
+        self.import_button.clicked.connect(self.import_scenario)
 
         splitter.addWidget(right_widget)
         splitter.setStretchFactor(1, 2)
@@ -97,6 +110,84 @@ class ScenarioPage(QWidget):
         self.scenario_name_edit.clear()
         self.scenario_builder_page.scenario_builder.clear()
         self.scenario_name_edit.setFocus()
+
+    def import_scenario(self) -> None:
+        """Импорт сценария из JSON-файла."""
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Открыть сценарий",
+            "",
+            "JSON-файлы (*.json)",
+        )
+        if not path:
+            return
+
+        try:
+            with open(path, encoding="utf-8") as f:
+                payload = json.load(f)
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось прочитать файл:\n{e}")
+            return
+
+        name = payload.get("name", "")
+        steps = payload.get("steps", [])
+        if not isinstance(steps, list):
+            QMessageBox.warning(self, "Ошибка", "В файле неверный формат `steps`.")
+            return
+
+        # Десериализуем каждую запись в ScenarioStep
+        try:
+            scenario_steps = [deserialize_step(s) for s in steps]
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Ошибка",
+                f"Не удалось десериализовать шаги:\n{e}",
+            )
+            return
+
+        # Заполняем UI
+        self.scenario_name_edit.setText(name)
+        self.scenario_builder_page.scenario_builder.set_scenario(scenario_steps)
+        self.scenario_list.clearSelection()
+
+        QMessageBox.information(
+            self,
+            "Импорт",
+            "Сценарий успешно загружен в конструктор.",
+        )
+
+    def export_scenario(self) -> None:
+        name = self.scenario_name_edit.text().strip()
+        if not name:
+            QMessageBox.warning(self, "Ошибка", "Сначала введите имя сценария.")
+            return
+
+        steps = self.scenario_builder_page.scenario_builder.get_scenario_steps()
+
+        temp = Scenario(name=name)
+        temp.set_steps(steps)
+
+        payload = {
+            "name": name,
+            "steps": json.loads(temp.steps),
+        }
+
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Сохранить сценарий как...",
+            f"{name}.json",
+            "JSON-файлы (*.json)",
+        )
+        if not path:
+            return
+
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(payload, f, ensure_ascii=False, indent=2)
+            QMessageBox.information(self, "Успех", f"Сценарий сохранён в {path}")
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось сохранить файл:\n{e}")
 
     def _add_scenario_to_list(self, scenario: Scenario) -> None:
         item = QListWidgetItem(scenario.name)
@@ -133,7 +224,6 @@ class ScenarioPage(QWidget):
                 f"Сценарий '{scenario_name}' обновлен.",
             )
         else:
-            # Создаем новый сценарий
             scenario = Scenario(name=scenario_name)
             scenario.set_steps(steps)
             scenario_db_manager.add_scenario(scenario)

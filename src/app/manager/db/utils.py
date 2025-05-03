@@ -2,7 +2,6 @@ import string
 
 import numpy as np
 import pandas as pd
-
 from src.app.config.log import get_logger
 from src.app.core.scenario_steps import ColumnDefinition
 from src.app.schemas.enums import DataType

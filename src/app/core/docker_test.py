@@ -63,6 +63,23 @@ def run_test(db_test_conf: DbTestConf, log_fn: callable(str)) -> None:
     # 2) Определяем, какой адаптер использовать (SQLAdapter, RedisAdapter, ...)
     db_type = config["db_type"].lower()
 
+    adapter = _get_db_adapter(config, db_host, db_type, exposed_port)
+
+    # 3) Подключаемся к базе через адаптер
+    adapter.connect()
+
+    # 4) Выполняем непосредственно тест (замеряем время, память)
+    _run_scenario_steps(adapter, docker_manager, db_test_conf, log_fn=log_fn)
+
+    # 5) Останавливаем контейнер
+    test_system_config = db_test_conf.test_system_config
+    docker_manager.stop_container(
+        stop=test_system_config.stop_after,
+        remove=test_system_config.remove_after,
+    )
+
+
+def _get_db_adapter(config, db_host, db_type, exposed_port) -> BaseAdapter:
     if db_type in ["postgresql", "mysql", "sqlite", "mssql"]:
         adapter = SQLAdapter(
             db_type=db_type,
@@ -84,19 +101,7 @@ def run_test(db_test_conf: DbTestConf, log_fn: callable(str)) -> None:
         # Если есть другие NoSQL/ in-memory, обрабатываем их здесь
         msg = f"Неизвестный/неподдерживаемый тип БД: {db_type}"
         raise ValueError(msg)
-
-    # 3) Подключаемся к базе через адаптер
-    adapter.connect()
-
-    # 4) Выполняем непосредственно тест (замеряем время, память)
-    _run_scenario_steps(adapter, docker_manager, db_test_conf, log_fn=log_fn)
-
-    # 5) Останавливаем контейнер
-    test_system_config = db_test_conf.test_system_config
-    docker_manager.stop_container(
-        stop=test_system_config.stop_after,
-        remove=test_system_config.remove_after,
-    )
+    return adapter
 
 
 def _run_scenario_steps(

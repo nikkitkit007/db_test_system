@@ -1,11 +1,10 @@
 from typing import Any
 
+import src.app.core.scenario_steps as steps
 from langchain_community.chat_models.yandex import ChatYandexGPT
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import PromptTemplate
 from pydantic import BaseModel, Field, RootModel
-
-import src.app.core.scenario_steps as steps
 from src.app.config.log import get_logger
 from src.app.schemas.enums import DataType, data_type_list  # noqa
 

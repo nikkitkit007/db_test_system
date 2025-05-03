@@ -14,7 +14,6 @@ from sqlalchemy import (
 )
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
-
 from src.app.config.log import get_logger
 from src.app.core.scenario_steps import CreateTableStep, InsertDataStep, QueryStep
 from src.app.manager.db.base_adapter import BaseAdapter

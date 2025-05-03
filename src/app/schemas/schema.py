@@ -1,5 +1,4 @@
 from pydantic import BaseModel, ConfigDict, Field
-
 from src.app.core.scenario_steps import ScenarioStep
 from src.app.storage.model import DockerImage
 

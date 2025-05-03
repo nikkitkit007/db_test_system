@@ -15,7 +15,6 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-
 from src.app.config.config import settings
 from src.app.desktop_client.results.visualizer import (
     Diagram,

@@ -3,7 +3,6 @@ from typing import Any
 
 import pandas as pd
 import redis
-
 from src.app.config.log import get_logger
 from src.app.core.scenario_steps import CreateTableStep, InsertDataStep, QueryStep
 from src.app.manager.db.base_adapter import BaseAdapter
@@ -28,9 +27,6 @@ class RedisAdapter(BaseAdapter):
         self.client = None
 
     def connect(self, **kwargs) -> None:
-        """
-        Подключаемся к Redis по заданному хосту и порту.
-        """
 
         try:
             self.client = redis.Redis(
@@ -48,9 +44,7 @@ class RedisAdapter(BaseAdapter):
             raise ConnectionError(msg)
 
     def test_connection(self, retries: int = 5, delay: int = 2) -> bool:
-        """
-        Аналогично SQLAdapter, несколько попыток проверить подключение (PING).
-        """
+
         if not self.client:
             logger.error("Redis client не инициализирован. Сначала вызовите connect().")
             return False
@@ -68,13 +62,7 @@ class RedisAdapter(BaseAdapter):
         return False
 
     def create_table(self, create_table_step: CreateTableStep) -> None:
-        """
-        У Redis нет понятия таблиц, но для демонстрации мы можем:
-        1) Создать некий HSET (таблицу) с ключом table_name;
-        2) Хранить список полей columns в неком ключе metadata.
 
-        В реальном проекте придется адаптировать под нужный use-case.
-        """
         if not self.client:
             msg = "Redis client не создан. Вызовите connect()."
             raise ConnectionError(msg)
@@ -96,14 +84,10 @@ class RedisAdapter(BaseAdapter):
             logger.exception(f"Ошибка при имитации create_table для Redis: {e}")
 
     def drop_table_if_exists(self, table_name: str) -> None:
-        """
-        Имитация 'удаления таблицы' — удаляем все ключи, связанные с table_name.
-        """
         if not self.client:
             msg = "Redis client не создан. Вызовите connect()."
             raise ConnectionError(msg)
 
-        # Удаляем metadata ключ
         schema_key = f"{table_name}:schema"
         try:
             self.client.delete(schema_key)

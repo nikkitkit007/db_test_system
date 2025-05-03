@@ -5,10 +5,9 @@ import shutil
 from logging.handlers import RotatingFileHandler
 
 import structlog
+from src.app.config.config import settings
 from structlog.contextvars import merge_contextvars
 from structlog.stdlib import ProcessorFormatter
-
-from src.app.config.config import settings
 
 
 class GZipRotator:

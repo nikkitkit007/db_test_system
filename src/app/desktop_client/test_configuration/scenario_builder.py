@@ -14,7 +14,6 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-
 from src.app.core.scenario_steps import (
     ColumnDefinition,
     CreateTableStep,

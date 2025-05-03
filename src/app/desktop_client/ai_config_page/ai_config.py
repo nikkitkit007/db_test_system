@@ -10,7 +10,6 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-
 from src.app.config.config import settings
 from src.app.core.llm.predictor import possible_llm
 from src.app.storage.db_manager.ai_config_storage import ai_config_db_manager

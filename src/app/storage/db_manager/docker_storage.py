@@ -71,20 +71,20 @@ class DockerStorage(SQLiteDB):
         return json.loads(image.config) if image.config else {}
 
     def update_docker_image(self, docker_image: DockerImage) -> DockerImage:
-        """Обновляет существующий Docker-образ в базе данных."""
         with self.session_scope() as session:
             existing = session.get(DockerImage, docker_image.id)
             if not existing:
                 msg = f"Образ с ID {docker_image.id} не найден."
                 raise ValueError(msg)
-            # Обновляем поля
+
             existing.image_name = docker_image.image_name
             existing.config_name = docker_image.config_name
-            # Если config передан как dict, приводим к JSON
+
             if isinstance(docker_image.config, dict):
                 existing.config = json.dumps(docker_image.config)
             else:
                 existing.config = docker_image.config
+
             existing.updated_at = datetime.datetime.now(datetime.UTC)
             session.flush()
             logger.info(f"Обновлен Docker-образ с ID {docker_image.id}.")

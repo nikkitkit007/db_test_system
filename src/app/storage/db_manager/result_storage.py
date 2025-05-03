@@ -1,5 +1,4 @@
 from sqlalchemy import select
-
 from src.app.config.config import settings
 from src.app.config.log import get_logger
 from src.app.storage.db_manager.db import SQLiteDB

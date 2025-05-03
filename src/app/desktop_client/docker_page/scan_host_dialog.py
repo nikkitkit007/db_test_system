@@ -14,7 +14,6 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-
 from src.app.manager.docker_manager import DockerManager
 from src.app.schemas.schema import DockerHostConfig
 

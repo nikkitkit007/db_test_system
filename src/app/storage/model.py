@@ -4,7 +4,6 @@ from typing import Any
 
 from sqlalchemy import Column, DateTime, Float, Integer, String, Text
 from sqlalchemy.orm import declarative_base
-
 from src.app.core.scenario_steps import ScenarioStep, deserialize_step
 
 Base = declarative_base()

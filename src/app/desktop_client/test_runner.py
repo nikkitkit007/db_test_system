@@ -1,5 +1,4 @@
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
-
 from src.app.config.log import get_logger
 from src.app.core.docker_test import run_test
 from src.app.core.scenario_steps import ScenarioStep

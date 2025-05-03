@@ -15,7 +15,6 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-
 from src.app.config.app_styles import style_sheet
 from src.app.config.config import settings
 from src.app.desktop_client.ai_config_page.ai_config import (
@@ -27,7 +26,10 @@ from src.app.desktop_client.docker_page.docker_config import (
     DockerImagesPage,
     docker_image_icon_path,
 )
-from src.app.desktop_client.results.test_result_tab import TestResultsApp, results_icon_path
+from src.app.desktop_client.results.test_result_tab import (
+    TestResultsApp,
+    results_icon_path,
+)
 from src.app.desktop_client.test_conf_tab import (
     ConfigApp,
     test_config_icon_path,

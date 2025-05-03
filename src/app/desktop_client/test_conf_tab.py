@@ -24,7 +24,6 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 from PyQt6.sip import isdeleted
-
 from src.app.config.config import settings
 from src.app.config.log import get_logger
 from src.app.desktop_client.config import PageIndex

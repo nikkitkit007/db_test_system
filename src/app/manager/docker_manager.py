@@ -7,7 +7,6 @@ import docker
 from docker.errors import DockerException, NotFound
 from docker.models.containers import Container
 from docker.models.images import Image
-
 from src.app.config.log import get_logger
 from src.app.schemas.schema import DockerHostConfig
 

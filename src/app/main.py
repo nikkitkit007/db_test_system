@@ -3,7 +3,6 @@ import sys
 from PyQt6.QtWidgets import (
     QApplication,
 )
-
 from src.app.desktop_client.main import MainApp
 
 

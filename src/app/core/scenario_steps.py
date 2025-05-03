@@ -2,7 +2,6 @@ import enum
 from dataclasses import dataclass
 
 from pydantic import BaseModel, ConfigDict
-
 from src.app.schemas.enums import DataType
 
 

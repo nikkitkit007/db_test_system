@@ -17,9 +17,10 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-
 from src.app.config.config import settings
-from src.app.desktop_client.docker_page.image_config_editor_dialog import ConfigEditorDialog
+from src.app.desktop_client.docker_page.image_config_editor_dialog import (
+    ConfigEditorDialog,
+)
 from src.app.desktop_client.docker_page.scan_host_dialog import ScanHostDialog
 from src.app.storage.db_manager.docker_storage import docker_db_manager
 from src.app.storage.model import DockerImage
