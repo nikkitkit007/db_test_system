@@ -50,9 +50,9 @@ class ConfigApp(QWidget):
 
     def __init__(self, stacked_widget: QStackedWidget) -> None:
         super().__init__()
-        self.db_image_label = QLabel("Выберите образ СУБД:")
+        self.db_image_label = QLabel(self.tr("Выберите образ СУБД:"))
         self.db_image_combo = QComboBox()
-        self.scenario_label = QLabel("Выберите Сценарий тестирования:")
+        self.scenario_label = QLabel(self.tr("Выберите Сценарий тестирования:"))
         self.scenario_combo = QComboBox()
         self.operation_combo = QComboBox()
         self.records_spinbox = QSpinBox()
@@ -60,11 +60,13 @@ class ConfigApp(QWidget):
         self.stacked_widget: QStackedWidget | None = None
 
         # Добавляем радиокнопки для выбора типа подключения
-        self.create_new_db_radio = QRadioButton("Создать новую БД")
-        self.connect_existing_db_radio = QRadioButton("Подключиться к существующей БД")
+        self.create_new_db_radio = QRadioButton(self.tr("Создать новую БД"))
+        self.connect_existing_db_radio = QRadioButton(
+            self.tr("Подключиться к существующей БД"),
+        )
         self.create_new_db_radio.setChecked(True)
-        self.stop_radio = QCheckBox("Остановить контейнер по завершении")
-        self.remove_radio = QCheckBox("Удалить контейнер после остановки")
+        self.stop_radio = QCheckBox(self.tr("Остановить контейнер по завершении"))
+        self.remove_radio = QCheckBox(self.tr("Удалить контейнер после остановки"))
 
         self.stop_radio.setChecked(True)
         self.remove_radio.setChecked(False)
@@ -73,18 +75,20 @@ class ConfigApp(QWidget):
         )
 
         # Радиокнопки для выбора Docker‑хоста
-        self.local_docker_radio = QRadioButton("Локальный Docker")
-        self.remote_docker_radio = QRadioButton("Удалённый Docker")
+        self.local_docker_radio = QRadioButton(self.tr("Локальный Docker"))
+        self.remote_docker_radio = QRadioButton(self.tr("Удалённый Docker"))
         self.local_docker_radio.setChecked(True)
         # Поля для подключения к существующей БД
-        self.docker_endpoint_label = QLabel("Docker‑хост:")
+        self.docker_endpoint_label = QLabel(self.tr("Docker‑хост:"))
         self.docker_endpoint_edit = QLineEdit()
         self.docker_endpoint_edit.setText("tcp://localhost:2375")
-        self.docker_endpoint_edit.setPlaceholderText("или unix:///var/run/docker.sock")
+        self.docker_endpoint_edit.setPlaceholderText(
+            self.tr("или unix:///var/run/docker.sock"),
+        )
 
-        self.add_image_button = QPushButton("Добавить новый образ")
-        self.add_scenario_button = QPushButton("Добавить новый сценарий")
-        self.start_button = QPushButton("Запустить тест")
+        self.add_image_button = QPushButton(self.tr("Добавить новый образ"))
+        self.add_scenario_button = QPushButton(self.tr("Добавить новый сценарий"))
+        self.start_button = QPushButton(self.tr("Запустить тест"))
 
         self.stacked_widget = stacked_widget
 
@@ -93,29 +97,31 @@ class ConfigApp(QWidget):
         self.tests = []  # список словарей {thread, worker, log_widget}
         self.log_tabs = QTabWidget()
 
-        self.initUI()
+        self.init_ui()
 
         self.load_docker_images()
         self.load_scenarios()
 
-    def initUI(self) -> None:
+    def init_ui(self) -> None:
         self.setWindowTitle("Docker Configurator")
         main_layout = QVBoxLayout(self)
         QFont("Arial", 14)
 
         # ─── Блок: подключение к Docker ───
-        docker_host_group = QGroupBox("Подключение к Docker")
+        docker_host_group = QGroupBox(self.tr("Подключение к Docker"))
         host_layout = QGridLayout()
         # радиокнопки локального/удалённого Docker
-        self.local_docker_radio = QRadioButton("Локальный Docker")
-        self.remote_docker_radio = QRadioButton("Удалённый Docker")
+        self.local_docker_radio = QRadioButton(self.tr("Локальный Docker"))
+        self.remote_docker_radio = QRadioButton(self.tr("Удалённый Docker"))
         self.local_docker_radio.setChecked(True)
         host_layout.addWidget(self.local_docker_radio, 0, 0)
         host_layout.addWidget(self.remote_docker_radio, 0, 1)
         # строка ввода endpoint
-        self.docker_endpoint_label = QLabel("Docker‑хост:")
-        self.docker_endpoint_edit = QLineEdit("tcp://localhost:2375")
-        self.docker_endpoint_edit.setPlaceholderText("или unix:///var/run/docker.sock")
+        self.docker_endpoint_label = QLabel(self.tr("Docker‑хост:"))
+        self.docker_endpoint_edit = QLineEdit(self.tr("tcp://localhost:2375"))
+        self.docker_endpoint_edit.setPlaceholderText(
+            self.tr("или unix:///var/run/docker.sock"),
+        )
         host_layout.addWidget(self.docker_endpoint_label, 1, 0)
         host_layout.addWidget(self.docker_endpoint_edit, 1, 1, 1, 2)
         docker_host_group.setLayout(host_layout)
@@ -132,7 +138,7 @@ class ConfigApp(QWidget):
             ),
         )
 
-        db_mode_group = QGroupBox("Режим подключения к БД")
+        db_mode_group = QGroupBox(self.tr("Режим подключения к БД"))
         db_mode_layout = QHBoxLayout()
         db_mode_layout.addWidget(self.create_new_db_radio)
         db_mode_layout.addWidget(self.connect_existing_db_radio)
@@ -140,7 +146,7 @@ class ConfigApp(QWidget):
         main_layout.addWidget(db_mode_group)
 
         # ─── Блок: выбор образа ───
-        docker_group = QGroupBox("Образы Docker")
+        docker_group = QGroupBox(self.tr("Образы Docker"))
         docker_layout = QHBoxLayout()
         docker_layout.addWidget(self.db_image_label)
         docker_layout.addWidget(self.db_image_combo)
@@ -149,7 +155,7 @@ class ConfigApp(QWidget):
         main_layout.addWidget(docker_group)
 
         # ─── Блок: действие после теста ───
-        action_group = QGroupBox("Действие по выполнении")
+        action_group = QGroupBox(self.tr("Действие по выполнении"))
         action_layout = QHBoxLayout()
         self.stop_radio.setChecked(True)
         action_layout.addWidget(self.stop_radio)
@@ -158,7 +164,7 @@ class ConfigApp(QWidget):
         main_layout.addWidget(action_group)
 
         # ─── Блок: сценарии ───
-        scenario_group = QGroupBox("Сценарии тестирования")
+        scenario_group = QGroupBox(self.tr("Сценарии тестирования"))
         scenario_layout = QHBoxLayout()
         scenario_layout.addWidget(self.scenario_label)
         scenario_layout.addWidget(self.scenario_combo)
@@ -176,6 +182,48 @@ class ConfigApp(QWidget):
         main_layout.addWidget(self.log_tabs, 3)
 
         self.setLayout(main_layout)
+
+    def retranslateUi(self) -> None:
+        # сам заголовок окна, если нужен:
+        self.setWindowTitle(self.tr("Docker Configurator"))
+
+        # Блок: подключение к Docker
+        self.local_docker_radio.setText(self.tr("Локальный Docker"))
+        self.remote_docker_radio.setText(self.tr("Удалённый Docker"))
+        self.docker_endpoint_label.setText(self.tr("Docker-хост:"))
+        self.docker_endpoint_edit.setPlaceholderText(
+            self.tr("или unix:///var/run/docker.sock"),
+        )
+
+        # Блок: режим подключения к БД
+        # QGroupBox.setTitle
+        db_mode_group = self.findChild(QGroupBox, None)  # или храните его в self
+        db_mode_group.setTitle(self.tr("Режим подключения к БД"))
+        self.create_new_db_radio.setText(self.tr("Создать новую БД"))
+        self.connect_existing_db_radio.setText(
+            self.tr("Подключиться к существующей БД"),
+        )
+
+        # Блок: выбор образа
+        docker_group = self.findChild(QGroupBox, None)  # аналогично
+        docker_group.setTitle(self.tr("Образы Docker"))
+        self.db_image_label.setText(self.tr("Выберите образ СУБД:"))
+        self.add_image_button.setText(self.tr("Добавить новый образ"))
+
+        # Блок: действие после теста
+        action_group = self.findChild(QGroupBox, None)
+        action_group.setTitle(self.tr("Действие по выполнении"))
+        self.stop_radio.setText(self.tr("Остановить контейнер по завершении"))
+        self.remove_radio.setText(self.tr("Удалить контейнер после остановки"))
+
+        # Блок: сценарии
+        scenario_group = self.findChild(QGroupBox, None)
+        scenario_group.setTitle(self.tr("Сценарии тестирования"))
+        self.scenario_label.setText(self.tr("Выберите Сценарий тестирования:"))
+        self.add_scenario_button.setText(self.tr("Добавить новый сценарий"))
+
+        # Кнопка запуска
+        self.start_button.setText(self.tr("Запустить тест"))
 
     def on_docker_mode_changed(self, remote: bool) -> None:
         """Показывает поле endpoint только в режиме 'Удалённый Docker'."""
@@ -314,7 +362,6 @@ class ConfigApp(QWidget):
                 thread.quit()
                 thread.wait(2000)
             except RuntimeError:
-                # объект уже удалён — игнорируем
                 pass
 
         self.log_tabs.removeTab(index)

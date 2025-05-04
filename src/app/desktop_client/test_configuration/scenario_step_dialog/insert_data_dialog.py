@@ -15,9 +15,9 @@ class InsertDataDialog(QDialog):
         self.spin_num_records = QSpinBox()
         self.spin_num_records.setRange(1, 10000000)
 
-        self.initUI()
+        self.init_ui()
 
-    def initUI(self) -> None:
+    def init_ui(self) -> None:
         layout = QFormLayout()
         layout.addRow("Имя таблицы:", self.combo_table_name)
         layout.addRow("Количество записей:", self.spin_num_records)

@@ -29,7 +29,7 @@ class DockerTestRunner(QObject):
 
     @pyqtSlot()
     def run(self) -> None:
-        self.log.emit("✨ Запускаем тест...")
+        self.log.emit(self.tr("✨ Запускаем тест…"))
         try:
 
             run_test(
@@ -41,8 +41,8 @@ class DockerTestRunner(QObject):
                 ),
                 log_fn=self.log.emit,
             )
-            self.log.emit("🟢 Тест завершён.")
+            self.log.emit(self.tr("🟢 Тест завершён."))
         except Exception as e:
-            logger.exception("Ошибка в DockerTestWorker: %s", e)
+            logger.exception(self.tr(f"❗️ Ошибка в DockerTestRunner: {e}"))
         finally:
             self.finished.emit()

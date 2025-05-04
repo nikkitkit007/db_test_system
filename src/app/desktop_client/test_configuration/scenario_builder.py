@@ -87,24 +87,31 @@ class ScenarioBuilderWidget(QWidget):
         self.steps = []
         self.table_infos: dict[str, TableInfo] = {}
 
+        # Setup table
         self.step_table = DraggableTableWidget(self)
         self.step_table.setColumnCount(5)
-        self.step_table.setHorizontalHeaderLabels(
-            ["Учитывать", "Тип операции", "Доп информация", "Удалить"],
-        )
         self.step_table.hideColumn(4)
-        self.step_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-        self.step_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        self.step_table.cellDoubleClicked.connect(self.on_cell_double_clicked)
+        self.step_table.setSelectionBehavior(
+            QTableWidget.SelectionBehavior.SelectRows,
+        )
+        self.step_table.setEditTriggers(
+            QTableWidget.EditTrigger.NoEditTriggers,
+        )
+        self.step_table.cellDoubleClicked.connect(
+            self.on_cell_double_clicked,
+        )
 
-        self.btn_create_table = QPushButton("Создать таблицу")
-        self.btn_insert_data = QPushButton("Наполнить таблицу")
-        self.btn_add_query = QPushButton("Запрос")
+        # Buttons
+        self.btn_create_table = QPushButton()
+        self.btn_insert_data = QPushButton()
+        self.btn_add_query = QPushButton()
 
-        self.initUI()
+        # Build UI and then translate
+        self.init_ui()
+        self.retranslateUi()
 
-    def initUI(self) -> None:
-        layout = QVBoxLayout()
+    def init_ui(self) -> None:
+        layout = QVBoxLayout(self)
 
         add_layout = QHBoxLayout()
         add_layout.addWidget(self.btn_create_table)
@@ -117,8 +124,20 @@ class ScenarioBuilderWidget(QWidget):
         self.btn_add_query.clicked.connect(self.add_query_step)
 
         layout.addWidget(self.step_table)
-
         self.setLayout(layout)
+
+    def retranslateUi(self) -> None:
+        headers = [
+            self.tr("Учитывать"),
+            self.tr("Тип операции"),
+            self.tr("Доп информация"),
+            self.tr("Удалить"),
+        ]
+        self.step_table.setHorizontalHeaderLabels(headers)
+
+        self.btn_create_table.setText(self.tr("Создать таблицу"))
+        self.btn_insert_data.setText(self.tr("Наполнить таблицу"))
+        self.btn_add_query.setText(self.tr("Запрос"))
 
     def on_cell_double_clicked(self, row: int, column: int) -> None:
         if row < len(self.steps):

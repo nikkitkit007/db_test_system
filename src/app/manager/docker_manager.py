@@ -356,6 +356,7 @@ class DockerManager:
 
     def send_log(self, msg: str, log_level: str = "info") -> None:
         # ✅ ❌ ⚠️
+
         if log_level == "info":
             self.log_fn(msg)
             logger.info(msg)

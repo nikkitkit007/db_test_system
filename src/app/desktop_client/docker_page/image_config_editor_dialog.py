@@ -24,21 +24,32 @@ class ConfigEditorDialog(QDialog):
         self.image_name = image_name
         self.original_config = config_dict if config_dict else {}
         self.edited_config = {}
-        self.init_ui()
 
-    def init_ui(self) -> None:
-        layout = QVBoxLayout(self)
-
-        form_layout = QFormLayout()
-
-        # Поля для основных ключей
         self.db_type_edit = QLineEdit(self)
         self.driver = QLineEdit(self)
         self.user_edit = QLineEdit(self)
         self.password_edit = QLineEdit(self)
         self.port_edit = QLineEdit(self)
         self.db_edit = QLineEdit(self)
-        self.env_edit = QTextEdit(self)  # env может быть крупным JSON
+        self.env_edit = QTextEdit(self)
+
+        self.label_db_type = QLabel(self)
+        self.label_driver = QLabel(self)
+        self.label_user = QLabel(self)
+        self.label_password = QLabel(self)
+        self.label_port = QLabel(self)
+        self.label_db = QLabel(self)
+        self.label_env = QLabel(self)
+
+        self.save_btn = QPushButton(self)
+        self.cancel_btn = QPushButton(self)
+
+        self.init_ui()
+
+    def init_ui(self) -> None:
+        layout = QVBoxLayout(self)
+
+        form_layout = QFormLayout()
 
         # Заполняем начальными значениями (если есть)
         self.db_type_edit.setText(self.original_config.get("db_type", ""))
@@ -53,29 +64,47 @@ class ConfigEditorDialog(QDialog):
         env_json_str = json.dumps(env_dict, indent=2, ensure_ascii=False)
         self.env_edit.setPlainText(env_json_str)
 
-        form_layout.addRow("db_type:", self.db_type_edit)
-        form_layout.addRow("driver:", self.driver)
-        form_layout.addRow("user:", self.user_edit)
-        form_layout.addRow("password:", self.password_edit)
-        form_layout.addRow("port:", self.port_edit)
-        form_layout.addRow("db:", self.db_edit)
-        form_layout.addRow(QLabel("env (JSON):"), self.env_edit)
+        form_layout.addRow(self.label_db_type, self.db_type_edit)
+        form_layout.addRow(self.label_driver, self.driver)
+        form_layout.addRow(self.label_user, self.user_edit)
+        form_layout.addRow(self.label_password, self.password_edit)
+        form_layout.addRow(self.label_port, self.port_edit)
+        form_layout.addRow(self.label_db, self.db_edit)
+        form_layout.addRow(self.label_env, self.env_edit)
+        layout.addLayout(form_layout)
 
         layout.addLayout(form_layout)
 
         # Кнопки "Сохранить" и "Отмена"
         btn_layout = QHBoxLayout()
-        save_btn = QPushButton("Сохранить", self)
-        cancel_btn = QPushButton("Отмена", self)
-        btn_layout.addWidget(save_btn)
-        btn_layout.addWidget(cancel_btn)
+        btn_layout.addWidget(self.save_btn)
+        btn_layout.addWidget(self.cancel_btn)
+        layout.addLayout(btn_layout)
 
-        save_btn.clicked.connect(self.save_and_close)
-        cancel_btn.clicked.connect(self.reject)
+        self.save_btn.clicked.connect(self.save_and_close)
+        self.cancel_btn.clicked.connect(self.reject)
 
         layout.addLayout(btn_layout)
         self.setLayout(layout)
         self.resize(400, 400)
+
+    def retranslateUi(self) -> None:
+        # Заголовок окна
+        title = self.tr("Editing configuration:") + f" {self.image_name}"
+        self.setWindowTitle(title)
+
+        # Метки
+        self.label_db_type.setText(self.tr("db_type:"))
+        self.label_driver.setText(self.tr("driver:"))
+        self.label_user.setText(self.tr("user:"))
+        self.label_password.setText(self.tr("password:"))
+        self.label_port.setText(self.tr("port:"))
+        self.label_db.setText(self.tr("db:"))
+        self.label_env.setText(self.tr("env (JSON):"))
+
+        # Кнопки
+        self.save_btn.setText(self.tr("Сохранить"))
+        self.cancel_btn.setText(self.tr("Отмена"))
 
     def save_and_close(self) -> None:
         """
@@ -121,5 +150,4 @@ class ConfigEditorDialog(QDialog):
         self.accept()  # Закрываем диалог с результатом Accepted
 
     def get_config(self) -> dict:
-        """Возвращает итоговый config, который собрали из полей."""
         return self.edited_config

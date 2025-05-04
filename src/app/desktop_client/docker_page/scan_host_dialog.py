@@ -21,26 +21,30 @@ from src.app.schemas.schema import DockerHostConfig
 class ScanHostDialog(QDialog):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Сканирование Docker‑хоста")
-        self.resize(600, 400)
+        # Виджеты и компоновка
+        self.host_label = QLabel()
+        self.host_edit = QLineEdit()
+        self.scan_btn = QPushButton()
+        self.table = QTableWidget(0, 3)
+        self.add_selected_btn = QPushButton()
 
+        self.containers: list[dict] = []
+
+        self.init_ui()
+        self.retranslateUi()
+
+    def init_ui(self) -> None:
+        self.resize(600, 400)
         layout = QVBoxLayout(self)
 
         # ─── Ввод хоста ───
         host_layout = QHBoxLayout()
-        host_layout.addWidget(QLabel("Хост (tcp://host:port):"))
-        self.host_edit = QLineEdit()
-        # дефолт для локального демона по TCP
-        self.host_edit.setText("tcp://localhost:2375")
+        host_layout.addWidget(self.host_label)
         host_layout.addWidget(self.host_edit)
-
-        self.scan_btn = QPushButton("Сканировать")
         host_layout.addWidget(self.scan_btn)
         layout.addLayout(host_layout)
 
         # ─── Таблица с чекбоксами ───
-        self.table = QTableWidget(0, 3, self)
-        self.table.setHorizontalHeaderLabels(["", "Имя контейнера", "Образ"])
         self.table.horizontalHeader().setSectionResizeMode(
             0,
             QHeaderView.ResizeMode.ResizeToContents,
@@ -58,16 +62,31 @@ class ScanHostDialog(QDialog):
         # ─── Кнопка добавить ───
         btn_layout = QHBoxLayout()
         btn_layout.addStretch(1)
-        self.add_selected_btn = QPushButton("Добавить выбранные")
         btn_layout.addWidget(self.add_selected_btn)
         layout.addLayout(btn_layout)
 
-        # ─── Сигналы ───
+        # Сигналы
         self.scan_btn.clicked.connect(self.on_scan)
         self.add_selected_btn.clicked.connect(self.accept)
 
-        # результат сканирования
-        self.containers: list[dict] = []
+    def retranslateUi(self) -> None:
+        # Заголовок окна
+        self.setWindowTitle(self.tr("Сканирование Docker‑хоста"))
+
+        # Метка и кнопки
+        self.host_label.setText(self.tr("Хост (tcp://host:port):"))
+        # дефолт текста
+        self.host_edit.setText(self.tr("tcp://localhost:2375"))
+        self.scan_btn.setText(self.tr("Сканировать"))
+        self.add_selected_btn.setText(self.tr("Добавить выбранные"))
+
+        # Заголовки таблицы
+        headers = [
+            "",
+            self.tr("Имя контейнера"),
+            self.tr("Образ"),
+        ]
+        self.table.setHorizontalHeaderLabels(headers)
 
     def on_scan(self) -> None:
         """

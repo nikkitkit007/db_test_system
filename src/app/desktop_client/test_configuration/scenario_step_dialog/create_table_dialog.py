@@ -27,9 +27,9 @@ class CreateTableDialog(QDialog):
         self.line_table_name = QLineEdit()
         self.columns_layout = QVBoxLayout()
 
-        self.initUI()
+        self.init_ui()
 
-    def initUI(self) -> None:
+    def init_ui(self) -> None:
         main_layout = QVBoxLayout()
 
         # Поле ввода имени таблицы

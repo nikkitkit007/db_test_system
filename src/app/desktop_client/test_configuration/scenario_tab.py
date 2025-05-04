@@ -32,20 +32,21 @@ class ScenarioPage(QWidget):
     def __init__(self, stacked_widget: QStackedWidget = None, parent=None) -> None:
         super().__init__(parent)
         self.stacked_widget = stacked_widget
-        self.new_scenario_button = QPushButton("Новый сценарий")
+        self.new_scenario_button = QPushButton(self.tr("Новый сценарий"))
         self.scenario_list = QListWidget()
         self.scenario_name_edit = QLineEdit()
         self.scenario_builder_page = ScenarioBuilderPage(self.stacked_widget)
 
-        self.save_button = QPushButton("Сохранить")
-        self.delete_button = QPushButton("Удалить")
-        self.export_button = QPushButton("Экспорт сценария")
-        self.import_button = QPushButton("Импорт сценария")
+        self.save_button = QPushButton()
+        self.delete_button = QPushButton()
+        self.export_button = QPushButton()
+        self.import_button = QPushButton()
 
-        self.initUI()
+        self.init_ui()
+        self.retranslateUi()
         self.load_scenarios()
 
-    def initUI(self) -> None:
+    def init_ui(self) -> None:
         # Основной горизонтальный layout с QSplitter для динамического изменения размера
         splitter = QSplitter(Qt.Orientation.Horizontal)
 
@@ -94,6 +95,19 @@ class ScenarioPage(QWidget):
         main_layout = QHBoxLayout(self)
         main_layout.addWidget(splitter)
         self.setLayout(main_layout)
+
+    def retranslateUi(self) -> None:
+        # Кнопки и подписи
+        self.new_scenario_button.setText(self.tr("Новый сценарий"))
+        self.save_button.setText(self.tr("Сохранить"))
+        self.delete_button.setText(self.tr("Удалить"))
+        self.export_button.setText(self.tr("Экспорт сценария"))
+        self.import_button.setText(self.tr("Импорт сценария"))
+        # Placeholder для названия
+        self.scenario_name_edit.setPlaceholderText(
+            self.tr("Введите имя сценария..."),
+        )
+        self.scenario_builder_page.scenario_builder.retranslateUi()
 
     def load_scenarios(self) -> None:
         """Загружает список сценариев из базы данных."""
@@ -262,9 +276,9 @@ class ScenarioBuilderPage(QWidget):
         self.stacked_widget = stacked_widget
         self.scenario_builder = ScenarioBuilderWidget(self)
 
-        self.initUI()
+        self.init_ui()
 
-    def initUI(self) -> None:
+    def init_ui(self) -> None:
         layout = QVBoxLayout()
         layout.addWidget(self.scenario_builder)
 

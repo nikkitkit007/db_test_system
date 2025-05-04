@@ -39,15 +39,24 @@ class DockerImagesPage(QWidget):
         self.docker_table = QTableWidget()
         self.connection_info = QTextEdit()
 
-        # Кнопки тулбара
-        self.add_config_button = QPushButton("Добавить образ")
-        self.scan_host_button = QPushButton("Сканировать хост")
-        self.delete_config_button = QPushButton("Удалить конфиг(и)")
+        self.add_config_button = QPushButton(self.tr("Добавить образ"))
+        self.scan_host_button = QPushButton(self.tr("Сканировать хост"))
+        self.delete_config_button = QPushButton(self.tr("Удалить конфиг(и)"))
+        self.containers_group = QGroupBox(self.tr("Список контейнеров"))
+        self.config_group = QGroupBox(self.tr("Информация / Конфигурация"))
 
-        self.initUI()
+        self.headers = [
+            self.tr("Конфиг"),
+            self.tr("Образ"),
+            self.tr("Создан"),
+            self.tr("Обновлен"),
+        ]
+
+        self.init_ui()
+        self.retranslateUi()
         self.load_docker_images()
 
-    def initUI(self) -> None:
+    def init_ui(self) -> None:
         main_layout = QVBoxLayout(self)
 
         # ─── Панель инструментов ───
@@ -59,12 +68,10 @@ class DockerImagesPage(QWidget):
         main_layout.addLayout(toolbar)
 
         # ─── Список образов ───
-        containers_group = QGroupBox("Список контейнеров")
         containers_layout = QVBoxLayout()
         self.docker_table.setColumnCount(4)
-        self.docker_table.setHorizontalHeaderLabels(
-            ["Конфиг", "Образ", "Создан", "Обновлен"],
-        )
+
+        self.docker_table.setHorizontalHeaderLabels(self.headers)
         self.docker_table.horizontalHeader().setStretchLastSection(True)
         self.docker_table.setSelectionBehavior(
             QTableWidget.SelectionBehavior.SelectRows,
@@ -74,16 +81,15 @@ class DockerImagesPage(QWidget):
         self.docker_table.itemDoubleClicked.connect(self.on_table_double_click)
 
         containers_layout.addWidget(self.docker_table)
-        containers_group.setLayout(containers_layout)
-        main_layout.addWidget(containers_group, 2)
+        self.containers_group.setLayout(containers_layout)
+        main_layout.addWidget(self.containers_group, 2)
 
         # ─── Информация / Конфигурация ───
-        config_group = QGroupBox("Информация / Конфигурация")
         config_layout = QVBoxLayout()
         self.connection_info.setReadOnly(True)
         config_layout.addWidget(self.connection_info)
-        config_group.setLayout(config_layout)
-        main_layout.addWidget(config_group, 3)
+        self.config_group.setLayout(config_layout)
+        main_layout.addWidget(self.config_group, 3)
 
         self.setLayout(main_layout)
 
@@ -92,8 +98,23 @@ class DockerImagesPage(QWidget):
         self.scan_host_button.clicked.connect(self.open_scan_dialog)
         self.delete_config_button.clicked.connect(self.delete_selected_config)
 
+    def retranslateUi(self) -> None:
+        self.containers_group.setTitle(self.tr("Список контейнеров"))
+        self.config_group.setTitle(self.tr("Информация / Конфигурация"))
+
+        self.add_config_button.setText(self.tr("Добавить образ"))
+        self.scan_host_button.setText(self.tr("Сканировать хост"))
+        self.delete_config_button.setText(self.tr("Удалить конфиг(и)"))
+
+        self.headers = [
+            self.tr("Конфиг"),
+            self.tr("Образ"),
+            self.tr("Создан"),
+            self.tr("Обновлен"),
+        ]
+        self.docker_table.setHorizontalHeaderLabels(self.headers)
+
     def load_docker_images(self) -> None:
-        """Загружает все сохранённые Docker‑образы из БД."""
         try:
             images = docker_db_manager.get_all_docker_images()
             self.docker_table.setRowCount(0)
@@ -136,7 +157,6 @@ class DockerImagesPage(QWidget):
     def on_table_double_click(self, item: QTableWidgetItem) -> None:
         """При двойном клике открываем редактор конфига."""
         row = item.row()
-        # Вытащим UserRole из первой колонки
         data = self.docker_table.item(row, 0).data(Qt.ItemDataRole.UserRole)
 
         if isinstance(data, dict):
@@ -190,7 +210,6 @@ class DockerImagesPage(QWidget):
                 self.load_docker_images()
 
     def display_container_info(self) -> None:
-        """Показывает детали выбранного образа или контейнера."""
         try:
             items = self.docker_table.selectedItems()
             if not items:
@@ -232,7 +251,6 @@ class DockerImagesPage(QWidget):
             QMessageBox.critical(self, "Ошибка", f"Ошибка отображения: {e}")
 
     def add_docker_image(self) -> None:
-        """Добавляет новый образ: запрашиваем имя, открываем редактор конфига."""
         image_name, ok = QInputDialog.getText(
             self,
             "Новый образ",
@@ -299,7 +317,6 @@ class DockerImagesPage(QWidget):
             self.docker_table.removeRow(row)
 
     def open_scan_dialog(self) -> None:
-        """Открывает диалог сканирования и добавляет выбранные контейнеры."""
         dialog = ScanHostDialog(self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             selected = dialog.selected_containers()

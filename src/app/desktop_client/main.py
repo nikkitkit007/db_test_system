@@ -1,8 +1,9 @@
 import os
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import QCoreApplication, Qt, QTranslator
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
+    QButtonGroup,
     QFrame,
     QHBoxLayout,
     QMainWindow,
@@ -15,7 +16,7 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from src.app.config.app_styles import style_sheet
+from src.app.config.app_styles import lang_button_style, style_sheet
 from src.app.config.config import settings
 from src.app.desktop_client.ai_config_page.ai_config import (
     AiConfigPage,
@@ -45,8 +46,11 @@ app_icon_path = os.path.join(settings.ICONS_PATH, "app_main_icon.svg")
 
 
 class MainApp(QMainWindow):
-    def __init__(self) -> None:
+    def __init__(self, translators: tuple, current_translator: QTranslator) -> None:
         super().__init__()
+        self.translators = translators
+        self.current_translator = current_translator
+
         self.setWindowTitle("Database Test System")
         self.setWindowIcon(QIcon(app_icon_path))
 
@@ -78,27 +82,27 @@ class MainApp(QMainWindow):
         self.nav_tree.setHeaderHidden(True)
 
         # Пункт «Конфигурации» (топ‐уровень)
-        self.config_item = QTreeWidgetItem(self.nav_tree, ["Тестирование"])
+        self.config_item = QTreeWidgetItem(self.nav_tree, [self.tr("Тестирование")])
         self.config_item.setIcon(0, QIcon(test_config_icon_path))
 
         # Пункт «Сценарии» (топ‐уровень)
-        self.scenario_item = QTreeWidgetItem(self.nav_tree, ["Сценарии"])
+        self.scenario_item = QTreeWidgetItem(self.nav_tree, [self.tr("Сценарии")])
         self.scenario_item.setIcon(0, QIcon(scenario_icon_path))
 
         # Пункт «Результаты» (топ‐уровень)
-        self.results_item = QTreeWidgetItem(self.nav_tree, ["Результаты"])
+        self.results_item = QTreeWidgetItem(self.nav_tree, [self.tr("Результаты")])
         self.results_item.setIcon(0, QIcon(results_icon_path))
 
         # Пункт «Система» (топ‐уровень)
-        self.system_item = QTreeWidgetItem(self.nav_tree, ["Система"])
+        self.system_item = QTreeWidgetItem(self.nav_tree, [self.tr("Система")])
         self.system_item.setIcon(0, QIcon(app_config_icon_path))
         self.system_item.setExpanded(True)
 
         # Дочерний пункт: «Образы Docker»
-        self.docker_item = QTreeWidgetItem(self.system_item, ["Образы Docker"])
+        self.docker_item = QTreeWidgetItem(self.system_item, [self.tr("Образы Docker")])
         self.docker_item.setIcon(0, QIcon(docker_image_icon_path))
         # Дочерний пункт: «AI»
-        self.ai_item = QTreeWidgetItem(self.system_item, ["AI подключение"])
+        self.ai_item = QTreeWidgetItem(self.system_item, [self.tr("AI подключение")])
         self.ai_item.setIcon(0, QIcon(ai_config_icon_path))
 
         # Обработка кликов по элементам
@@ -116,8 +120,45 @@ class MainApp(QMainWindow):
         )
         self.sidebar_layout.addSpacerItem(spacer)
 
+        # Виджет для кнопок RU/EN
+        lang_widget = QWidget()
+        self.lang_widget = lang_widget
+        lang_layout = QHBoxLayout(lang_widget)
+        lang_layout.setContentsMargins(5, 5, 5, 5)
+        lang_layout.setSpacing(5)
+
+        # Кнопки
+        self.btn_ru = QToolButton()
+        self.btn_ru.setText("RU")
+        self.btn_ru.setCheckable(True)
+        self.btn_ru.setChecked(True)  # по умолчанию RU
+
+        self.btn_en = QToolButton()
+        self.btn_en.setText("EN")
+        self.btn_en.setCheckable(True)
+
+        self.btn_ru.setCheckable(True)
+        self.btn_ru.setAutoRaise(False)
+        self.btn_en.setCheckable(True)
+        self.btn_en.setAutoRaise(False)
+
+        # Группа, чтобы только одна кнопка могла быть нажата
+        self.lang_group = QButtonGroup(self)
+        self.lang_group.setExclusive(True)
+        self.lang_group.addButton(self.btn_ru)
+        self.lang_group.addButton(self.btn_en)
+        self.btn_ru.setChecked(True)
+
+        self.btn_ru.setStyleSheet(lang_button_style)
+        self.btn_en.setStyleSheet(lang_button_style)
+        # Добавляем в layout
+        lang_layout.addWidget(self.btn_ru)
+        lang_layout.addWidget(self.btn_en)
+        self.sidebar_layout.addWidget(lang_widget)
+
+        # --- Затем кнопка сворачивания ---
         self.btn_toggle = QToolButton()
-        self.btn_toggle.setText("Свернуть")
+        self.btn_toggle.setText(self.tr("Свернуть"))
         self.btn_toggle.clicked.connect(self.toggle_sidebar)
         self.sidebar_layout.addWidget(self.btn_toggle)
 
@@ -147,37 +188,66 @@ class MainApp(QMainWindow):
         self.setCentralWidget(main_widget)
 
         self.apply_styles()
+        self.btn_ru.clicked.connect(lambda: self.on_language_changed("ru"))
+        self.btn_en.clicked.connect(lambda: self.on_language_changed("en"))
 
     def on_tree_item_clicked(self, item: QTreeWidgetItem, column: int) -> None:
         """
         Переключаем QStackedWidget в зависимости от выбранного пункта.
         """
         if item == self.docker_item:
-            # «Образы Docker» (index 3)
             self.stacked_widget.setCurrentIndex(PageIndex.docker_page)
         elif item == self.config_item:
-            # «Конфигурации» (index 0)
             self.stacked_widget.setCurrentIndex(PageIndex.config_app)
         elif item == self.results_item:
-            # «Результаты» (index 2)
             self.stacked_widget.setCurrentIndex(PageIndex.test_results_app)
         elif item == self.scenario_item:
-            # «Сценарии» (index 4)
             self.stacked_widget.setCurrentIndex(PageIndex.scenario_page)
         elif item == self.system_item:
-            pass  # По клику на «Система» ничего не делаем
+            pass
         elif item == self.ai_item:
             self.stacked_widget.setCurrentIndex(PageIndex.ai_config_page)
         else:
             pass
 
+    def on_language_changed(self, lang_code: str) -> None:
+        QCoreApplication.instance().removeTranslator(self.current_translator)
+
+        # 2) ставим новый
+        new_tr = self.translators[0] if lang_code == "ru" else self.translators[1]
+        QCoreApplication.instance().installTranslator(new_tr)
+        self.current_translator = new_tr
+
+        # 3) обновляем все надписи в UI
+        self.retranslateUi()
+        # и для каждой страницы в stacked_widget, если у них есть retranslateUi():
+        for page in (
+            self.config_app,
+            self.scenario_builder_page,
+            self.test_results_app,
+            self.docker_page,
+            self.scenario_page,
+            self.ai_page,
+        ):
+            if hasattr(page, "retranslateUi"):
+                page.retranslateUi()
+
+    def retranslateUi(self) -> None:
+        # кнопки
+        self.btn_toggle.setText(self.tr("Свернуть"))
+        self.btn_ru.setText(self.tr("RU"))
+        self.btn_en.setText(self.tr("EN"))
+
+        # и теперь пункты меню
+        self.config_item.setText(0, self.tr("Тестирование"))
+        self.scenario_item.setText(0, self.tr("Сценарии"))
+        self.results_item.setText(0, self.tr("Результаты"))
+        self.system_item.setText(0, self.tr("Система"))
+        self.docker_item.setText(0, self.tr("Образы Docker"))
+        self.ai_item.setText(0, self.tr("AI подключение"))
+
     def toggle_sidebar(self) -> None:
-        """
-        Сворачивает/разворачивает боковую панель. При сворачивании оставляются
-        только значки верхнего уровня, текст скрывается, дочерние пункты прячутся.
-        """
         if self.sidebar_expanded:
-            # Сворачиваем
             self.sidebar_expanded = False
             self.sidebar.setMinimumWidth(self.collapsed_width)
             self.sidebar.setMaximumWidth(self.collapsed_width)
@@ -186,38 +256,31 @@ class MainApp(QMainWindow):
             self.nav_tree.setHorizontalScrollBarPolicy(
                 Qt.ScrollBarPolicy.ScrollBarAlwaysOff,
             )
+            self.lang_widget.hide()
         else:
-            # Разворачиваем
             self.sidebar_expanded = True
             self.sidebar.setMinimumWidth(self.expanded_width)
             self.sidebar.setMaximumWidth(self.expanded_width)
-            self.btn_toggle.setText("Свернуть")
+            self.btn_toggle.setText(self.tr("Свернуть"))
             self._update_nav_tree_collapsed(collapsed=False)
             self.nav_tree.setHorizontalScrollBarPolicy(
                 Qt.ScrollBarPolicy.ScrollBarAsNeeded,
             )
+            self.lang_widget.show()
 
     def _update_nav_tree_collapsed(self, collapsed: bool) -> None:
-        """
-        При collapsed=True скрывает текст и дочерние пункты верхнеуровневых элементов.
-        При collapsed=False восстанавливает текст и показывает дочерние пункты.
-        """
         for i in range(self.nav_tree.topLevelItemCount()):
             item = self.nav_tree.topLevelItem(i)
             if collapsed:
-                # Сохраняем оригинальный текст, если ещё не сохранён
                 if item.data(0, Qt.ItemDataRole.UserRole) is None:
                     item.setData(0, Qt.ItemDataRole.UserRole, item.text(0))
                 item.setText(0, "")
-                # Скрываем дочерние элементы
                 for j in range(item.childCount()):
                     item.child(j).setHidden(True)
             else:
-                # Восстанавливаем оригинальный текст
                 original = item.data(0, Qt.ItemDataRole.UserRole)
                 if original is not None:
                     item.setText(0, original)
-                # Показываем дочерние элементы
                 for j in range(item.childCount()):
                     item.child(j).setHidden(False)
 

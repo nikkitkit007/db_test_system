@@ -167,3 +167,18 @@ QToolTip {
     font-size: 12px;
 }
 """
+lang_button_style = """
+    QToolButton {
+        border: 1px solid transparent;
+        border-radius: 4px;
+        padding: 4px 8px;
+    }
+    QToolButton:checked {
+        background-color: #007bff;
+        color: white;
+        border: 1px solid #0056b3;
+    }
+    QToolButton:hover {
+        border: 1px solid #0056b3;
+    }
+"""

@@ -29,7 +29,8 @@ results_icon_path = os.path.join(settings.ICONS_PATH, "results_icon.svg")
 class TestResultsApp(QWidget):
     def __init__(self) -> None:
         super().__init__()
-        self.initUI()
+        self.init_ui()
+        self.retranslateUi()
         self.load_possible_filter_key_values()
         self.visualizer = TestResultsVisualizer()
         self.get_results()
@@ -38,87 +39,86 @@ class TestResultsApp(QWidget):
         self.refresh_timer.timeout.connect(self.on_timer_refresh)
         self.refresh_timer.start()
 
-    def initUI(self) -> None:
-        """Создаёт интерфейс вкладки «Test Results» с фильтрами, таблицей и визуализацией."""
-        main_layout = QVBoxLayout()
+    def init_ui(self) -> None:
         QFont("Arial", 14)
-
-        # === Блок фильтров ===
-        filter_group = QGroupBox("Фильтр результатов")
+        # === Filter block ===
+        self.filter_group = QGroupBox()
         filter_layout = QHBoxLayout()
-
-        # Фильтр по db_image
-        self.db_image_label = QLabel("Docker образ:")
+        self.db_image_label = QLabel()
         self.db_image_filter_combo = QComboBox()
-        self.db_image_filter_combo.addItem("Все", "")
+        self.db_image_filter_combo.addItem("", "")
         filter_layout.addWidget(self.db_image_label)
         filter_layout.addWidget(self.db_image_filter_combo)
 
-        # Фильтр по operation
-        self.operation_label = QLabel("Операция:")
+        self.operation_label = QLabel()
         self.operation_filter_combo = QComboBox()
-        self.operation_filter_combo.addItem("Все", "")
+        self.operation_filter_combo.addItem("", "")
         filter_layout.addWidget(self.operation_label)
         filter_layout.addWidget(self.operation_filter_combo)
 
-        # Кнопка «Применить»
-        self.apply_filter_button = QPushButton("Применить")
+        self.apply_filter_button = QPushButton()
         self.apply_filter_button.clicked.connect(self.get_results)
         filter_layout.addWidget(self.apply_filter_button)
 
-        filter_group.setLayout(filter_layout)
-        main_layout.addWidget(filter_group)
-
-        # === Группа «Результаты тестирования» (используется таблица) ===
-        results_group = QGroupBox("Результаты тестирования")
+        self.filter_group.setLayout(filter_layout)
+        # === Results group ===
+        self.results_group = QGroupBox()
         results_layout = QVBoxLayout()
-
         self.results_table = QTableWidget()
         self.results_table.setSelectionBehavior(
-            QAbstractItemView.SelectionBehavior.SelectRows,
+            QTableWidget.SelectionBehavior.SelectRows,
         )
         self.results_table.setSelectionMode(
             QAbstractItemView.SelectionMode.ExtendedSelection,
         )
         self.results_table.setColumnCount(8)
-        self.results_table.setHorizontalHeaderLabels(
-            [
-                "Timestamp",
-                "DB Image",
-                "Operation",
-                "Num Records",
-                "Test info",
-                "Exec Time",
-                "Memory",
-                "CPU %",
-            ],
-        )
-        self.results_table.setSelectionBehavior(
-            QTableWidget.SelectionBehavior.SelectRows,
-        )
-        results_layout.addWidget(self.results_table)
-
-        # Кнопка удаления
-        self.delete_button = QPushButton("Удалить результат(ы)")
+        self.delete_button = QPushButton()
         self.delete_button.clicked.connect(self.delete_selected_results)
+        results_layout.addWidget(self.results_table)
         results_layout.addWidget(self.delete_button)
+        self.results_group.setLayout(results_layout)
 
-        results_group.setLayout(results_layout)
-        main_layout.addWidget(results_group)
-
-        # === Блок управления визуализацией ===
-        visualization_layout = QHBoxLayout()
-
+        # === Visualization ===
+        self.visualization_layout = QHBoxLayout()
         self.visualization_type = QComboBox()
         self.visualization_type.addItems(diagrams)
-        visualization_layout.addWidget(self.visualization_type)
-
-        self.visualize_button = QPushButton("Визуализировать")
+        self.visualize_button = QPushButton()
         self.visualize_button.clicked.connect(self.visualize_results)
-        visualization_layout.addWidget(self.visualize_button)
+        self.visualization_layout.addWidget(self.visualization_type)
+        self.visualization_layout.addWidget(self.visualize_button)
 
-        main_layout.addLayout(visualization_layout)
+        # Main layout
+        main_layout = QVBoxLayout(self)
+        main_layout.addWidget(self.filter_group)
+        main_layout.addWidget(self.results_group)
+        main_layout.addLayout(self.visualization_layout)
         self.setLayout(main_layout)
+
+    def retranslateUi(self) -> None:
+        # Translate filter block
+        self.filter_group.setTitle(self.tr("Фильтр результатов"))
+        self.db_image_label.setText(self.tr("Docker образ:"))
+        self.operation_label.setText(self.tr("Операция:"))
+        self.apply_filter_button.setText(self.tr("Применить"))
+
+        # Translate results group
+        self.results_group.setTitle(self.tr("Результаты тестирования"))
+        headers = [
+            self.tr("Timestamp"),
+            self.tr("DB Image"),
+            self.tr("Operation"),
+            self.tr("Num Records"),
+            self.tr("Test info"),
+            self.tr("Exec Time"),
+            self.tr("Memory"),
+            self.tr("CPU %"),
+        ]
+        self.results_table.setHorizontalHeaderLabels(headers)
+        self.delete_button.setText(self.tr("Удалить результат(ы)"))
+
+        # Translate visualization
+        # diagrams are programmatic, not translated here
+        self.visualize_button.setText(self.tr("Визуализировать"))
 
     # ---------------------------------------------------------------------
     # Методы для фильтрации

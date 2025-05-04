@@ -23,23 +23,25 @@ class AiConfigPage(QWidget):
         super().__init__(parent)
         self.combo_provider = QComboBox()
         self.json_text_edit = QPlainTextEdit()
-        self.btn_validate_json = QPushButton("Проверить JSON")
-        self.btn_save_ai_config = QPushButton("Сохранить конфигурацию")
+        self.btn_validate_json = QPushButton(self.tr("Проверить JSON"))
+        self.btn_save_ai_config = QPushButton(self.tr("Сохранить конфигурацию"))
+        self.label_provider = QLabel(self.tr("Выберите провайдера AI:"))
+        self.label_json = QLabel(self.tr("Введите JSON-конфигурацию:"))
+
         self.init_ui()
+        self.retranslateUi()
+        self.load_ai_config()
 
     def init_ui(self) -> None:
         layout = QVBoxLayout(self)
 
-        label_provider = QLabel("Выберите провайдера AI:")
-        layout.addWidget(label_provider)
+        layout.addWidget(self.label_provider)
 
-        self.combo_provider.addItems(possible_llm)  # Добавьте при необходимости
+        self.combo_provider.addItems(possible_llm)
         layout.addWidget(self.combo_provider)
 
         self.combo_provider.currentIndexChanged.connect(self.load_ai_config)
-
-        label_json = QLabel("Введите JSON-конфигурацию:")
-        layout.addWidget(label_json)
+        layout.addWidget(self.label_json)
 
         self.json_text_edit.setPlaceholderText(
             '{\n    "api_key": "your-key-here",\n    "other_param": "value"\n}',
@@ -50,7 +52,6 @@ class AiConfigPage(QWidget):
         layout.addWidget(self.btn_save_ai_config)
 
         self.setLayout(layout)
-        self.load_ai_config()
 
     def save_ai_config(self) -> None:
         text = self.json_text_edit.toPlainText().strip()
@@ -69,6 +70,18 @@ class AiConfigPage(QWidget):
         else:
             existing_config.config = ai_config.config
             ai_config_db_manager.update_ai_config(existing_config)
+
+    def retranslateUi(self) -> None:
+        """
+        Переустанавливает все текстовые элементы UI согласно текущему переводчику.
+        """
+        # Метки
+        self.label_provider.setText(self.tr("Выберите провайдера AI:"))
+        self.label_json.setText(self.tr("Введите JSON-конфигурацию:"))
+
+        # Кнопки
+        self.btn_validate_json.setText(self.tr("Проверить JSON"))
+        self.btn_save_ai_config.setText(self.tr("Сохранить конфигурацию"))
 
     def load_ai_config(self) -> None:
         provider_name = self.combo_provider.currentText()

@@ -22,9 +22,9 @@ class SelectTableStepsDialog(QDialog):
         self.setWindowTitle("Выберите таблицы для создания")
         self.table_steps = table_steps  # исходный список шагов
         self.list_widget = QListWidget()
-        self.initUI()
+        self.init_ui()
 
-    def initUI(self) -> None:
+    def init_ui(self) -> None:
         layout = QVBoxLayout()
 
         instruction_label = QLabel("Отметьте таблицы, которые необходимо оставить:")
@@ -70,9 +70,9 @@ class QueryDialog(QDialog):
         self.create_table_steps_for_run_query = []
         self.text_edit = QTextEdit()
 
-        self.initUI()
+        self.init_ui()
 
-    def initUI(self) -> None:
+    def init_ui(self) -> None:
         layout = QVBoxLayout()
 
         instruction_label = QLabel("Введите SQL-запрос:")
