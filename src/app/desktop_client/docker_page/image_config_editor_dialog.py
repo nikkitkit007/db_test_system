@@ -20,7 +20,7 @@ class ConfigEditorDialog(QDialog):
 
     def __init__(self, parent=None, image_name="", config_dict=None) -> None:
         super().__init__(parent)
-        self.setWindowTitle(f"Редактирование конфигурации: {image_name}")
+        self.setWindowTitle(self.tr(f"Редактирование конфигурации") + f": {image_name}")
         self.image_name = image_name
         self.original_config = config_dict if config_dict else {}
         self.edited_config = {}
@@ -45,6 +45,7 @@ class ConfigEditorDialog(QDialog):
         self.cancel_btn = QPushButton(self)
 
         self.init_ui()
+        self.retranslateUi()
 
     def init_ui(self) -> None:
         layout = QVBoxLayout(self)
