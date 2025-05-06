@@ -55,6 +55,8 @@ class QueryStep(ScenarioStep):
     step_type: StepType = StepType.query
 
     query: str
+    thread_count: int
+    request_count: int
 
     def __str__(self) -> str:
         return f"Запрос: {self.query}"
@@ -79,6 +81,8 @@ def deserialize_step(data: dict):
     if step_type == StepType.query.value:
         return QueryStep(
             query=data["query"],
+            thread_count=data.get("thread_count", 1),
+            request_count=data.get("request_count", 1),
             measure=measure,
         )
     msg = f"Неизвестный тип шага: {step_type}"

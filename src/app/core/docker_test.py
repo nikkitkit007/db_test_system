@@ -1,3 +1,4 @@
+import concurrent.futures
 import re
 import time
 
@@ -145,7 +146,18 @@ def _execute_step(adapter: BaseAdapter, step: ScenarioStep) -> None:
         adapter.insert_data(step)
 
     elif step.step_type == StepType.query:
-        adapter.execute_query(step)
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=step.thread_count,
+        ) as executor:
+            futures = [
+                executor.submit(adapter.execute_query, step)
+                for _ in range(step.request_count)
+            ]
+            for fut in concurrent.futures.as_completed(futures):
+                try:
+                    fut.result()
+                except Exception:
+                    raise
 
     else:
         msg = f"Неизвестный шаг: {type(step).__name__}"

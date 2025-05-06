@@ -136,8 +136,8 @@ class SQLAdapter(BaseAdapter):
             *columns,
             extend_existing=True,
         )
-
-        table.create(self.engine)
+        with self.engine.begin() as conn:
+            table.create(conn)
         logger.info(f"Таблица {table_name} создана.")
 
     @require_engine
@@ -163,8 +163,8 @@ class SQLAdapter(BaseAdapter):
 
     @require_engine
     def execute_query(self, query_step: QueryStep) -> Any:
-        result = None
+        query = query_step.query
         with self.engine.connect() as connection:
-            result = connection.execute(text(query_step.query))
-        logger.info(f"Запрос выполнен: {query_step.query}")
+            result = connection.execute(text(query))
+        logger.info(f"Запрос выполнен: {query}")
         return result

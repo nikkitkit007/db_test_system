@@ -172,10 +172,17 @@ class ScenarioBuilderWidget(QWidget):
                 step.table_name = table_name
                 step.num_records = num_records
         elif step.step_type == StepType.query:
-            dialog = QueryDialog(query=step.query, parent=self)
+            dialog = QueryDialog(
+                query=step.query,
+                initial_threads=step.thread_count,
+                initial_requests=step.request_count,
+                parent=self,
+            )
             if dialog.exec() == QDialog.DialogCode.Accepted:
-                query, additional_steps = dialog.get_data()
+                query, additional_steps, thread_count, request_count = dialog.get_data()
                 step.query = query
+                step.thread_count = thread_count
+                step.request_count = request_count
 
         self.update_step_table()
 
@@ -233,8 +240,13 @@ class ScenarioBuilderWidget(QWidget):
     def add_query_step(self) -> None:
         dialog = QueryDialog(parent=self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
-            query, additional_steps = dialog.get_data()
-            step = QueryStep(query=query, measure=False)
+            query, additional_steps, thread_count, request_count = dialog.get_data()
+            step = QueryStep(
+                query=query,
+                thread_count=thread_count,
+                request_count=request_count,
+                measure=False,
+            )
             if additional_steps:
                 for add_step in additional_steps:
                     updated = False
