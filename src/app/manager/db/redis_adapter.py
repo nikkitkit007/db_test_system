@@ -1,3 +1,4 @@
+import json
 import time
 from typing import Any
 
@@ -24,118 +25,103 @@ class RedisAdapter(BaseAdapter):
         self.port = port
         self.password = password
         self.db = db
-        self.client = None
+        self.client: redis.Redis | None = None
 
     def connect(self, **kwargs) -> None:
-
         try:
             self.client = redis.Redis(
                 host=self.host,
                 port=self.port,
                 password=self.password,
                 db=self.db,
+                ssl_cert_reqs=None,
+                decode_responses=True,
             )
-            # Проверим подключение, выполнив простую команду
             self.client.ping()
-            logger.info(f"Подключение к Redis {self.host}:{self.port} успешно.")
+            logger.info("Подключение к Redis %s:%s успешно.", self.host, self.port)
         except redis.RedisError as e:
-            logger.exception(f"Ошибка при подключении к Redis: {e}")
-            msg = "Не удалось подключиться к Redis."
-            raise ConnectionError(msg)
+            logger.exception("Ошибка при подключении к Redis: %s", e)
+            raise ConnectionError("Не удалось подключиться к Redis.") from e
 
     def test_connection(self, retries: int = 5, delay: int = 2) -> bool:
-
         if not self.client:
-            logger.error("Redis client не инициализирован. Сначала вызовите connect().")
+            logger.error("Redis client не инициализирован ‒ вызовите connect().")
             return False
 
-        for attempt in range(retries):
+        for attempt in range(1, retries + 1):
             try:
                 self.client.ping()
-                logger.info("Подключение к Redis успешно.")
                 return True
             except redis.RedisError as e:
-                logger.warning(f"Ошибка при PING к Redis (попытка {attempt+1}): {e}")
+                logger.warning("PING к Redis не прошёл (попытка %d): %s", attempt, e)
                 time.sleep(delay)
-
-        logger.error(f"Не удалось подключиться к Redis за {retries} попыток.")
         return False
 
     def create_table(self, create_table_step: CreateTableStep) -> None:
+        """Храним схему в ключе <table>:schema"""
+        self._require_client()
 
-        if not self.client:
-            msg = "Redis client не создан. Вызовите connect()."
-            raise ConnectionError(msg)
-
-        table_name = create_table_step.table_name
-        schema_key = f"{table_name}:schema"
-        columns_str = ",".join(
-            [
-                f"{col}:{col_def.data_type}"
-                for col, col_def in create_table_step.columns.items()
-            ],
-        )
-        try:
-            self.client.set(schema_key, columns_str)
-            logger.info(
-                f"Имитация создания структуры '{table_name}' в Redis: {columns_str}",
-            )
-        except redis.RedisError as e:
-            logger.exception(f"Ошибка при имитации create_table для Redis: {e}")
+        key = f"{create_table_step.table_name}:schema"
+        schema = {
+            col: col_def.data_type for col, col_def in create_table_step.columns.items()
+        }
+        self.client.set(key, json.dumps(schema))
+        logger.info("Схема %s создана/заменена.", key)
 
     def drop_table_if_exists(self, table_name: str) -> None:
-        if not self.client:
-            msg = "Redis client не создан. Вызовите connect()."
-            raise ConnectionError(msg)
+        """Удаляем и схему, и все строки table_name:*."""
+        self._require_client()
 
-        schema_key = f"{table_name}:schema"
-        try:
-            self.client.delete(schema_key)
-            logger.info(f"Удалена схема '{schema_key}' в Redis (если существовала).")
-        except redis.RedisError as e:
-            logger.exception(f"Ошибка при удалении схемы {schema_key}: {e}")
+        pipe = self.client.pipeline()
+        pipe.delete(f"{table_name}:schema")
 
-        # Опционально: если мы храним сами данные в виде (table_name:rowN), то их тоже нужно удалить
-        # ...
+        # собираем все ключи пачкой и удаляем
+        for k in self.client.scan_iter(match=f"{table_name}:row:*"):
+            pipe.delete(k)
+        pipe.execute()
+        logger.info("Таблица %s удалена (с ключами row:*).", table_name)
 
-    def insert_data(
-        self,
-        insert_step: InsertDataStep,
-    ) -> None:
-        """
-        Так как Redis не SQL, сделаем упрощенный пример:
-        Каждая строка df станет записью в HSET, ключ: f'{table_name}:rowN'
-        """
-        if not self.client:
-            msg = "Redis client не создан. Вызовите connect()."
-            raise ConnectionError(msg)
+    def insert_data(self, insert_step: InsertDataStep) -> None:
+        self._require_client()
 
-        table_name = insert_step.table_name
-        columns = insert_step.columns
-        num_records = insert_step.num_records
-
-        csv_file = generate_csv(num_records, columns)
+        csv_file = generate_csv(insert_step.num_records, insert_step.columns)
         df = pd.read_csv(csv_file)
-        try:
-            for idx, row in df.iterrows():
-                key = f"{table_name}:row:{idx}"
-                # Преобразуем row в словарь
-                row_dict = row.to_dict()
-                # Записываем HSET
-                self.client.hset(
-                    name=key,
-                    mapping={str(k): str(v) for k, v in row_dict.items()},
-                )
-            logger.info(f"Вставлено {len(df)} строк(и) в {table_name} (Redis).")
-        except redis.RedisError as e:
-            logger.exception(f"Ошибка при вставке данных в Redis: {e}")
+
+        pipe = self.client.pipeline()
+        for idx, row in df.iterrows():
+            key = f"{insert_step.table_name}:row:{idx}"
+            pipe.hset(key, mapping=row.astype(str).to_dict())
+        pipe.execute()
+        logger.info("Вставлено %d строк(и) в %s.", len(df), insert_step.table_name)
 
     def execute_query(self, query_step: QueryStep) -> Any:
         """
-        В Redis нет SQL-запросов, поэтому либо нужно интерпретировать запросы
-        (что сложно), либо предоставлять другой метод для работы.
-
-        Для примера вернем заглушку.
+        Пользователь передаёт строку ровно в том же виде,
+        как в redis-cli. Мы разбираем её на токены и прокидываем
+        в .execute_command().
+        Пример: 'HGET users:row:0 name'
         """
-        logger.warning("Redis не поддерживает SQL. Метод execute_query вернет None.")
-        return None
+        self._require_client()
+
+        cmd_line = query_step.query.strip()
+        if not cmd_line:
+            logger.warning("Пустой запрос получен.")
+            return None
+
+        try:
+            tokens = cmd_line.split()
+            command, *args = tokens
+            result = self.client.execute_command(command, *args)
+            logger.info("Redis-команда выполнена: %s", cmd_line)
+            return result
+        except redis.RedisError as e:
+            logger.exception(
+                "Ошибка при выполнении Redis-команды '%s': %s",
+                cmd_line,
+                e,
+            )
+            raise
+
+    def _require_client(self) -> None:
+        if not self.client:
+            raise ConnectionError("Redis client не создан: вызовите connect().")
